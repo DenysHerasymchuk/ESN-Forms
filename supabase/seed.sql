@@ -1,0 +1,3 @@
+-- Intentionally empty. Reference data (field_types, integration_providers)
+-- ships in a versioned migration instead of here, since it needs to exist
+-- in every environment (including production), not just local dev resets.
