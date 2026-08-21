@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { CenteredCardShell } from '../components/layout/CenteredCardShell'
 import { PageHeader } from '../components/ui/PageHeader'
 import { TextField } from '../components/ui/TextField'
@@ -60,10 +60,7 @@ export function LoginPage() {
         </div>
       </form>
       <p className="mt-6 text-center text-sm text-muted">
-        Don't have an account?{' '}
-        <Link to="/signup" className="font-medium text-esn-blue hover:underline">
-          Sign up
-        </Link>
+        Don't have an account? Ask an ESN Form Admin to create one for you.
       </p>
     </CenteredCardShell>
   )

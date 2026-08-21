@@ -2,7 +2,6 @@ import { Route, Routes } from 'react-router-dom'
 import { EsncardPage } from './pages/legacy/EsncardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LoginPage } from './pages/LoginPage'
-import { SignupPage } from './pages/SignupPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 
@@ -11,7 +10,6 @@ function App() {
     <Routes>
       <Route path="/" element={<EsncardPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
