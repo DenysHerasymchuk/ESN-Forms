@@ -54,6 +54,14 @@ export type ValidationError = {
   message: string
 }
 
+// select/radio store either a known option value or the literal
+// otherOptionValue marker - the respondent's actual free text for "Other"
+// lives under this separate synthetic key, not as the field's own answer.
+// Exported so the renderer and the validator agree on the same key.
+export function otherAnswerKey(fieldId: string): string {
+  return `${fieldId}__other`
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function isEmpty(value: string | string[] | undefined): boolean {
@@ -156,7 +164,19 @@ export function validate(fields: Field[], answers: Answers): ValidationError[] {
     }
 
     const error = validateFieldValue(field, value)
-    if (error) errors.push({ fieldId: field.id, message: error })
+    if (error) {
+      errors.push({ fieldId: field.id, message: error })
+      continue
+    }
+
+    if (
+      (field.type === 'select' || field.type === 'radio') &&
+      field.config.allowOther &&
+      value === field.config.otherOptionValue &&
+      isEmpty(answers[otherAnswerKey(field.id)])
+    ) {
+      errors.push({ fieldId: otherAnswerKey(field.id), message: `Please specify "${field.label}"` })
+    }
   }
 
   return errors
