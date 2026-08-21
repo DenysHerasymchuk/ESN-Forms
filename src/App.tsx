@@ -3,6 +3,7 @@ import { EsncardPage } from './pages/legacy/EsncardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { FormBuilderPage } from './pages/FormBuilderPage'
 import { PublicFormPage } from './pages/PublicFormPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AppShell } from './components/layout/AppShell'
@@ -25,6 +26,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/forms/:formId/edit" element={<FormBuilderPage />} />
         </Route>
       </Route>
 

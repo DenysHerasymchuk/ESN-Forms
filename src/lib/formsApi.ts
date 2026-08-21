@@ -50,6 +50,15 @@ export async function updateFormFields(formId: string, fields: Field[]): Promise
   return data
 }
 
+export async function updateFormMeta(
+  formId: string,
+  meta: { name: string; description: string | null },
+): Promise<FormRow> {
+  const { data, error } = await supabase.from('forms').update(meta).eq('id', formId).select().single()
+  if (error) throw error
+  return data
+}
+
 async function setFormStatus(formId: string, status: FormStatus): Promise<FormRow> {
   const { data, error } = await supabase.from('forms').update({ status }).eq('id', formId).select().single()
   if (error) throw error

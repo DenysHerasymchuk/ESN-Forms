@@ -1,8 +1,7 @@
 <p align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Logo_ESN_AISBL.png" alt="Erasmus Student Network logo" height="120" />
+    [![ESN Forms banner](public/pictures/esn-forms-banner.jpeg)](https://esngeel.org)
 </p>
-
-<h1 align="center">ESN Geel Registration Form</h1>
+<h1 align="center">ESN Geel Forms</h1>
 
 <p align="center">
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" />
@@ -12,12 +11,9 @@
   <img alt="oxlint" src="https://img.shields.io/badge/Lint-oxlint-000000" />
 </p>
 
-ESNcard online registration form for ESN Geel. On submit, it posts directly to a Google Form's
-`formResponse` endpoint client-side — no backend is required.
+ESN Forms online builder and publisher for ESN Geel.
 
-<p align="center">
-  <img src="public/demo.png" alt="Screenshot of the ESNcard registration form" width="700" />
-</p>
+Create, update and share your own forms right inside of the application.
 
 ## Development
 
