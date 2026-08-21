@@ -1,6 +1,4 @@
-<p align="center">
-    [![ESN Forms banner](public/pictures/esn-forms-banner.jpeg)](https://esngeel.org)
-</p>
+[![ESN Forms banner](public/pictures/esn-forms-banner.jpeg)](https://esngeel.org)
 <h1 align="center">ESN Geel Forms</h1>
 
 <p align="center">
