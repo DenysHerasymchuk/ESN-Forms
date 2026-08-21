@@ -136,6 +136,7 @@ export function validate(fields: Field[], answers: Answers): ValidationError[] {
     }
 
     if (isEmpty(value)) continue
+    if (value === undefined) continue // narrows the type below; isEmpty already ruled this out at runtime
 
     if (field.type === 'checkbox') {
       const values = Array.isArray(value) ? value : [value]
