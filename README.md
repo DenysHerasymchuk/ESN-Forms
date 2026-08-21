@@ -1,5 +1,4 @@
 [![ESN Forms banner](public/pictures/esn-forms-banner.jpeg)](https://esngeel.org)
-<h1 align="center">ESN Geel Forms</h1>
 
 <p align="center">
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" />
@@ -9,9 +8,10 @@
   <img alt="oxlint" src="https://img.shields.io/badge/Lint-oxlint-000000" />
 </p>
 
-ESN Forms online builder and publisher for ESN Geel.
+<h1 align="center">ESN Geel Forms</h1>
+ESN Forms is a dedicated online form builder designed specifically for ESN Geel, making it easy to create, manage, and share forms for all your events and activities.
 
-Create, update and share your own forms right inside of the application.
+Create custom registration forms directly within the application, tailor them to your event’s needs, and publish them with just a few clicks. Whether you’re organizing a party, trip, activity, or any other ESN event, you can quickly collect registrations and keep everything organized in one place.
 
 ## Development
 
