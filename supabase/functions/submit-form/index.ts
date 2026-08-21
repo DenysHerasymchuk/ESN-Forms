@@ -52,7 +52,8 @@ Deno.serve(async (req) => {
     .maybeSingle()
 
   if (formError) {
-    return jsonResponse({ success: false, error: 'Failed to look up the form' }, 500)
+    console.error('submit-form: failed to look up form', formError)
+    return jsonResponse({ success: false, error: `Failed to look up the form: ${formError.message}` }, 500)
   }
 
   if (!form || form.status !== 'published') {
@@ -71,7 +72,8 @@ Deno.serve(async (req) => {
     .single()
 
   if (insertError) {
-    return jsonResponse({ success: false, error: 'Failed to store the submission' }, 500)
+    console.error('submit-form: failed to insert submission', insertError)
+    return jsonResponse({ success: false, error: `Failed to store the submission: ${insertError.message}` }, 500)
   }
 
   return jsonResponse({ success: true, submissionId: submission.id, submittedAt: submission.submitted_at }, 201)
