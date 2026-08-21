@@ -6,7 +6,7 @@
 --
 -- One-time setup per environment, run in the SQL editor after deploying the
 -- dispatch-integrations function:
---   select vault.create_secret('https://<project-ref>.functions.supabase.co', 'edge_function_base_url');
+--   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1', 'edge_function_base_url');
 --   select vault.create_secret('<service-role-key>', 'service_role_key');
 create extension if not exists supabase_vault;
 
