@@ -1,10 +1,19 @@
-import { Route, Routes } from 'react-router-dom'
+import { Outlet, Route, Routes } from 'react-router-dom'
 import { EsncardPage } from './pages/legacy/EsncardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { PublicFormPage } from './pages/PublicFormPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
+import { AppShell } from './components/layout/AppShell'
+
+function DashboardLayout() {
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  )
+}
 
 function App() {
   return (
@@ -14,7 +23,9 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
