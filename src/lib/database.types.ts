@@ -50,6 +50,15 @@ export type IntegrationDeliveryRow = {
   created_at: string
 }
 
+export type UserRole = 'member' | 'admin'
+
+export type ProfileRow = {
+  id: string
+  email: string
+  role: UserRole
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -75,6 +84,12 @@ export type Database = {
         Row: IntegrationDeliveryRow
         Insert: Partial<IntegrationDeliveryRow> & Pick<IntegrationDeliveryRow, 'submission_id' | 'integration_id'>
         Update: Partial<IntegrationDeliveryRow>
+        Relationships: []
+      }
+      profiles: {
+        Row: ProfileRow
+        Insert: Partial<ProfileRow> & Pick<ProfileRow, 'id' | 'email'>
+        Update: Partial<ProfileRow>
         Relationships: []
       }
     }
