@@ -67,7 +67,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="surface-card animate-rise relative overflow-hidden">
       <div className="p-6 sm:p-10">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <PageHeader title="My forms" subtitle="Create and manage the forms you own." />
@@ -107,7 +107,10 @@ export function DashboardPage() {
                   <FaPen aria-hidden="true" />
                   <span className="hidden lg:inline">Edit</span>
                 </SecondaryButton>
-                <SecondaryButton tone="orange" onClick={() => navigate(`/dashboard/forms/${form.id}/submissions`)}>
+                <SecondaryButton
+                  tone="orange"
+                  onClick={() => navigate(`/dashboard/forms/${form.id}/edit?tab=submissions`)}
+                >
                   <FaFileLines aria-hidden="true" />
                   <span className="hidden lg:inline">Submissions</span>
                 </SecondaryButton>

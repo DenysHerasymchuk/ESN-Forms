@@ -59,7 +59,7 @@ export function LoginPage() {
           <StatusMessage tone={error ? 'error' : 'idle'} message={error} />
         </div>
       </form>
-      <p className="mt-6 text-center text-sm text-muted">
+      <p className="mt-8 text-center text-sm text-muted">
         Don't have an account? Ask an ESN Form Admin to create one for you.
       </p>
     </CenteredCardShell>

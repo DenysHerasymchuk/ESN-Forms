@@ -6,6 +6,8 @@ import { DashboardPage } from './pages/DashboardPage'
 import { ArchivePage } from './pages/ArchivePage'
 import { FormBuilderPage } from './pages/FormBuilderPage'
 import { PublicFormPage } from './pages/PublicFormPage'
+import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AdminFormsPage } from './pages/AdminFormsPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AppShell } from './components/layout/AppShell'
 
@@ -30,6 +32,13 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/archive" element={<ArchivePage />} />
           <Route path="/dashboard/forms/:formId/edit" element={<FormBuilderPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute requireAdmin />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard/admin/users" element={<AdminUsersPage />} />
+          <Route path="/dashboard/admin/forms" element={<AdminFormsPage />} />
         </Route>
       </Route>
 

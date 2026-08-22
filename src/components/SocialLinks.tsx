@@ -25,7 +25,7 @@ export function SocialLinks() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={label}
-          className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-105 ${colorClass}`}
+          className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-[1.04] ${colorClass}`}
         >
           <Icon className="h-6 w-6" />
         </a>

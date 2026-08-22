@@ -76,6 +76,10 @@ export function FieldConfigEditor({ field, onChange }: Props) {
   }
 
   const OptionIcon = type === 'checkbox' ? FaSquare : FaRegCircle
+  // Every other type's "more settings" only ever held help text/placeholder,
+  // both now auto-generated (see formField.ts) - so there's nothing left to
+  // show them for, and the disclosure itself should just not appear.
+  const hasMoreSettings = type === 'text' || type === 'textarea' || type === 'number'
 
   return (
     <div>
@@ -156,100 +160,82 @@ export function FieldConfigEditor({ field, onChange }: Props) {
         <p className="mt-3 text-sm text-muted">Respondents check a single box to acknowledge this.</p>
       )}
 
-      <div className="mt-4 border-t border-slate-100 pt-3">
-        <button
-          type="button"
-          onClick={() => setShowMore((value) => !value)}
-          aria-expanded={showMore}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
-        >
-          <FaChevronDown
-            aria-hidden="true"
-            className={`transition-transform duration-200 ${showMore ? 'rotate-180' : ''}`}
-          />
-          More settings
-        </button>
-
-        <div
-          className={`grid transition-[grid-template-rows] duration-200 ease-out ${showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
-        >
-          <div className="overflow-hidden">
-            <div className="mt-3">
-            <TextField
-              label="Help text"
-              value={field.helpText ?? ''}
-              onChange={(value) => onChange({ ...field, helpText: value || null })}
+      {hasMoreSettings && (
+        <div className="mt-4 border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={() => setShowMore((value) => !value)}
+            aria-expanded={showMore}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
+          >
+            <FaChevronDown
+              aria-hidden="true"
+              className={`transition-transform duration-200 ${showMore ? 'rotate-180' : ''}`}
             />
+            More settings
+          </button>
 
-            {(type === 'text' || type === 'textarea') && (
-              <>
-                <TextField
-                  label="Placeholder"
-                  value={config.placeholder ?? ''}
-                  onChange={(value) => updateConfig({ placeholder: value || undefined })}
-                />
-                <TextField
-                  label="Minimum length"
-                  type="number"
-                  value={config.minLength?.toString() ?? ''}
-                  onChange={(value) => updateConfig({ minLength: value ? Number(value) : undefined })}
-                />
-                <TextField
-                  label="Maximum length"
-                  type="number"
-                  value={config.maxLength?.toString() ?? ''}
-                  onChange={(value) => updateConfig({ maxLength: value ? Number(value) : undefined })}
-                />
-                {type === 'textarea' && (
-                  <TextField
-                    label="Rows"
-                    type="number"
-                    value={config.rows?.toString() ?? ''}
-                    onChange={(value) => updateConfig({ rows: value ? Number(value) : undefined })}
-                  />
+          <div
+            className={`grid transition-[grid-template-rows] duration-200 ease-out ${showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+          >
+            <div className="overflow-hidden">
+              <div className="mt-3">
+                {(type === 'text' || type === 'textarea') && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextField
+                        label="Minimum length"
+                        type="number"
+                        value={config.minLength?.toString() ?? ''}
+                        onChange={(value) => updateConfig({ minLength: value ? Number(value) : undefined })}
+                      />
+                      <TextField
+                        label="Maximum length"
+                        type="number"
+                        value={config.maxLength?.toString() ?? ''}
+                        onChange={(value) => updateConfig({ maxLength: value ? Number(value) : undefined })}
+                      />
+                    </div>
+                    {type === 'textarea' && (
+                      <TextField
+                        label="Rows"
+                        type="number"
+                        value={config.rows?.toString() ?? ''}
+                        onChange={(value) => updateConfig({ rows: value ? Number(value) : undefined })}
+                      />
+                    )}
+                  </>
                 )}
-              </>
-            )}
 
-            {(type === 'email' || type === 'url' || type === 'date') && (
-              <TextField
-                label="Placeholder"
-                value={config.placeholder ?? ''}
-                onChange={(value) => updateConfig({ placeholder: value || undefined })}
-              />
-            )}
-
-            {type === 'number' && (
-              <>
-                <TextField
-                  label="Placeholder"
-                  value={config.placeholder ?? ''}
-                  onChange={(value) => updateConfig({ placeholder: value || undefined })}
-                />
-                <TextField
-                  label="Minimum"
-                  type="number"
-                  value={config.min?.toString() ?? ''}
-                  onChange={(value) => updateConfig({ min: value ? Number(value) : undefined })}
-                />
-                <TextField
-                  label="Maximum"
-                  type="number"
-                  value={config.max?.toString() ?? ''}
-                  onChange={(value) => updateConfig({ max: value ? Number(value) : undefined })}
-                />
-                <TextField
-                  label="Step"
-                  type="number"
-                  value={config.step?.toString() ?? ''}
-                  onChange={(value) => updateConfig({ step: value ? Number(value) : undefined })}
-                />
-              </>
-            )}
+                {type === 'number' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextField
+                        label="Minimum"
+                        type="number"
+                        value={config.min?.toString() ?? ''}
+                        onChange={(value) => updateConfig({ min: value ? Number(value) : undefined })}
+                      />
+                      <TextField
+                        label="Maximum"
+                        type="number"
+                        value={config.max?.toString() ?? ''}
+                        onChange={(value) => updateConfig({ max: value ? Number(value) : undefined })}
+                      />
+                    </div>
+                    <TextField
+                      label="Step"
+                      type="number"
+                      value={config.step?.toString() ?? ''}
+                      onChange={(value) => updateConfig({ step: value ? Number(value) : undefined })}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

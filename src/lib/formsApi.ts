@@ -82,6 +82,14 @@ export async function getPublishedFormBySlug(slug: string): Promise<FormRow | nu
   return data
 }
 
+// Blocked at the database level (submissions.form_id ON DELETE RESTRICT) if
+// the form has any submissions - callers should check that first and offer
+// archiving instead, but the constraint is the real guarantee either way.
+export async function deleteForm(formId: string): Promise<void> {
+  const { error } = await supabase.from('forms').delete().eq('id', formId)
+  if (error) throw error
+}
+
 export async function listSubmissions(formId: string): Promise<SubmissionRow[]> {
   const { data, error } = await supabase
     .from('submissions')

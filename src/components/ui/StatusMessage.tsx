@@ -16,7 +16,12 @@ const toneClasses: Record<StatusTone, string> = {
 export function StatusMessage({ tone, message }: StatusMessageProps) {
   if (!message) return null
   return (
-    <p role="status" aria-live="polite" className={`flex items-center gap-1.5 text-sm ${toneClasses[tone]}`}>
+    <p
+      key={message}
+      role="status"
+      aria-live="polite"
+      className={`animate-fade-in flex items-center gap-1.5 text-sm ${toneClasses[tone]}`}
+    >
       {tone === 'success' && <FaCircleCheck aria-hidden="true" />}
       {tone === 'error' && <FaCircleExclamation aria-hidden="true" />}
       {message}

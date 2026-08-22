@@ -45,7 +45,7 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'Nothing
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
           {rows.map((row) => (
-            <tr key={getRowKey(row)} className="hover:bg-slate-50">
+            <tr key={getRowKey(row)} className="hover:bg-ink/[0.02]">
               {columns.map((column) => (
                 <td
                   key={column.header}

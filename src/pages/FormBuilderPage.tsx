@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { FaArrowLeft, FaBoxArchive, FaFileLines, FaFloppyDisk, FaGlobe, FaLink, FaRotateLeft } from 'react-icons/fa6'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import {
+  FaArrowLeft,
+  FaBoxArchive,
+  FaFileLines,
+  FaFloppyDisk,
+  FaGlobe,
+  FaLink,
+  FaRotateLeft,
+  FaTrash,
+} from 'react-icons/fa6'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
+import { DataTable, type DataTableColumn } from '../components/ui/DataTable'
+import { InlineHeadingField } from '../components/ui/InlineHeadingField'
+import { Modal } from '../components/ui/Modal'
 import { FieldListEditor } from '../components/builder/FieldListEditor'
 import {
   archiveForm,
+  deleteForm,
   getOwnerForm,
   listSubmissions,
   publishForm,
@@ -14,38 +27,65 @@ import {
   updateFormMeta,
 } from '../lib/formsApi'
 import { getErrorMessage } from '../lib/errors'
-import type { Field } from '../lib/formField'
-import type { FormRow } from '../lib/database.types'
+import { otherAnswerKey, type Field } from '../lib/formField'
+import type { FormRow, SubmissionRow } from '../lib/database.types'
 
-type Tab = 'questions' | 'settings'
+type Tab = 'questions' | 'submissions' | 'settings'
 
-const titleInputClasses =
-  'w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 font-display text-3xl font-bold text-ink placeholder:text-slate-300 focus:border-esn-blue focus:outline-none focus:ring-0'
-const descriptionInputClasses =
-  'mt-3 w-full resize-none border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-base text-ink placeholder:text-slate-400 focus:border-esn-blue focus:outline-none focus:ring-0'
+// select/radio/checkbox answers are stored as option values, not labels -
+// this resolves each stored value back to what the respondent actually
+// saw, including substituting in their free text for an "Other" pick.
+function formatAnswer(field: Field, answers: SubmissionRow['answers']): string {
+  const value = answers[field.id]
+
+  if (field.type === 'acknowledge') {
+    return value === field.config.value ? 'Yes' : '—'
+  }
+
+  if (value === undefined || (Array.isArray(value) ? value.length === 0 : value === '')) {
+    return '—'
+  }
+
+  if (field.type === 'checkbox' || field.type === 'select' || field.type === 'radio') {
+    const options = field.config.options ?? []
+    const labelFor = (raw: string) => {
+      if (field.config.allowOther && raw === field.config.otherOptionValue) {
+        const other = answers[otherAnswerKey(field.id)]
+        return typeof other === 'string' && other ? other : raw
+      }
+      return options.find((option) => option.value === raw)?.label ?? raw
+    }
+    const values = Array.isArray(value) ? value : [value]
+    return values.map(labelFor).join(', ')
+  }
+
+  return Array.isArray(value) ? value.join(', ') : value
+}
 
 export function FormBuilderPage() {
   const { formId } = useParams<{ formId: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
-  const [activeTab, setActiveTab] = useState<Tab>('questions')
+  const [activeTab, setActiveTab] = useState<Tab>(searchParams.get('tab') === 'submissions' ? 'submissions' : 'questions')
 
   const [form, setForm] = useState<FormRow | null>(null)
   const [fields, setFields] = useState<Field[]>([])
-  const [submissionCount, setSubmissionCount] = useState(0)
+  const [submissions, setSubmissions] = useState<SubmissionRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [metaError, setMetaError] = useState('')
-  const [isSavingMeta, setIsSavingMeta] = useState(false)
-
-  const [fieldsError, setFieldsError] = useState('')
-  const [isSavingFields, setIsSavingFields] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
   const [lifecycleError, setLifecycleError] = useState('')
   const [isChangingStatus, setIsChangingStatus] = useState(false)
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     if (!formId) return
@@ -56,12 +96,12 @@ export function FormBuilderPage() {
     setIsLoading(true)
     setLoadError('')
     try {
-      const [loadedForm, submissions] = await Promise.all([getOwnerForm(id), listSubmissions(id)])
+      const [loadedForm, loadedSubmissions] = await Promise.all([getOwnerForm(id), listSubmissions(id)])
       setForm(loadedForm)
       setFields(loadedForm.fields)
       setName(loadedForm.name)
       setDescription(loadedForm.description ?? '')
-      setSubmissionCount(submissions.length)
+      setSubmissions(loadedSubmissions)
     } catch (error) {
       setLoadError(getErrorMessage(error, 'Failed to load this form.'))
     } finally {
@@ -69,36 +109,36 @@ export function FormBuilderPage() {
     }
   }
 
-  async function handleSaveMeta() {
+  async function handleSave() {
     if (!formId) return
     if (!name.trim()) {
-      setMetaError('Give the form a name.')
+      setSaveError('Give the form a name.')
       return
     }
-    setIsSavingMeta(true)
-    setMetaError('')
+    setIsSaving(true)
+    setSaveError('')
     try {
-      const updated = await updateFormMeta(formId, { name: name.trim(), description: description.trim() || null })
-      setForm(updated)
-    } catch (error) {
-      setMetaError(getErrorMessage(error, 'Failed to save.'))
-    } finally {
-      setIsSavingMeta(false)
-    }
-  }
-
-  async function handleSaveFields() {
-    if (!formId) return
-    setIsSavingFields(true)
-    setFieldsError('')
-    try {
+      await updateFormMeta(formId, { name: name.trim(), description: description.trim() || null })
       const updated = await updateFormFields(formId, fields)
       setForm(updated)
       setFields(updated.fields)
     } catch (error) {
-      setFieldsError(getErrorMessage(error, 'Failed to save fields.'))
+      setSaveError(getErrorMessage(error, 'Failed to save.'))
     } finally {
-      setIsSavingFields(false)
+      setIsSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!formId) return
+    setIsDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteForm(formId)
+      navigate('/dashboard')
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, 'Failed to delete the form.'))
+      setIsDeleting(false)
     }
   }
 
@@ -129,18 +169,13 @@ export function FormBuilderPage() {
     }`
 
   return (
-    <div>
+    <div className="animate-rise">
       <div className="mb-6 flex items-center gap-8 border-b border-slate-200">
         <button type="button" onClick={() => setActiveTab('questions')} className={tabClasses('questions')}>
           Questions
         </button>
-        <button
-          type="button"
-          onClick={() => navigate(`/dashboard/forms/${formId}/submissions`)}
-          className="flex items-center gap-1.5 border-b-2 border-transparent px-1 py-4 text-sm font-semibold text-muted transition-colors hover:text-ink"
-        >
-          <FaFileLines aria-hidden="true" />
-          Responses{submissionCount > 0 ? ` (${submissionCount})` : ''}
+        <button type="button" onClick={() => setActiveTab('submissions')} className={tabClasses('submissions')}>
+          Submissions{submissions.length > 0 ? ` (${submissions.length})` : ''}
         </button>
         <button type="button" onClick={() => setActiveTab('settings')} className={tabClasses('settings')}>
           Settings
@@ -149,49 +184,60 @@ export function FormBuilderPage() {
 
       {activeTab === 'questions' && (
         <div key="questions" className="animate-fade-in space-y-4">
-          <div className="overflow-hidden rounded-xl border border-slate-200 border-t-4 border-t-esn-blue bg-white shadow-sm">
+          <div className="surface-card overflow-hidden border-t-4 border-t-esn-blue">
             <div className="p-5 sm:p-6">
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Form name"
-                className={titleInputClasses}
-              />
-              <textarea
+              <InlineHeadingField value={name} onChange={setName} placeholder="Form name" />
+              <InlineHeadingField
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={setDescription}
                 placeholder="Form description (supports Markdown)"
-                rows={2}
-                className={descriptionInputClasses}
+                multiline
               />
-              <div className="mt-4 flex justify-end">
-                <SecondaryButton onClick={() => void handleSaveMeta()} disabled={isSavingMeta}>
-                  <FaFloppyDisk aria-hidden="true" />
-                  {isSavingMeta ? 'Saving…' : 'Save details'}
-                </SecondaryButton>
-              </div>
-              {metaError && (
-                <div className="mt-2">
-                  <StatusMessage tone="error" message={metaError} />
-                </div>
-              )}
             </div>
           </div>
 
-          <FieldListEditor fields={fields} onChange={setFields} hasSubmissions={submissionCount > 0} />
+          <FieldListEditor fields={fields} onChange={setFields} hasSubmissions={submissions.length > 0} />
 
           <div className="flex items-center justify-end gap-4">
-            {fieldsError && <StatusMessage tone="error" message={fieldsError} />}
-            <PrimaryButton onClick={() => void handleSaveFields()} isSubmitting={isSavingFields} className="w-auto px-6">
+            {saveError && <StatusMessage tone="error" message={saveError} />}
+            <PrimaryButton onClick={() => void handleSave()} isSubmitting={isSaving} className="w-auto px-6">
               <FaFloppyDisk aria-hidden="true" />
-              Save questions
+              Save
             </PrimaryButton>
           </div>
         </div>
       )}
 
+      {activeTab === 'submissions' && (
+        <div key="submissions" className="animate-fade-in space-y-4">
+          <p className="text-sm text-muted">
+            {submissions.length} response{submissions.length === 1 ? '' : 's'}
+          </p>
+          <DataTable
+            columns={form.fields
+              .filter((field) => !field.deprecated)
+              .map<DataTableColumn<SubmissionRow>>((field) => ({
+                header: field.label || 'Untitled question',
+                cell: (submission) => formatAnswer(field, submission.answers),
+              }))
+              .concat({
+                header: 'Submitted',
+                cell: (submission) => new Date(submission.submitted_at).toLocaleString(),
+              })}
+            rows={submissions}
+            getRowKey={(submission) => submission.id}
+            emptyMessage={
+              <>
+                <FaFileLines className="text-2xl text-slate-300" aria-hidden="true" />
+                <span>No responses yet.</span>
+              </>
+            }
+          />
+        </div>
+      )}
+
       {activeTab === 'settings' && (
-        <div key="settings" className="animate-fade-in rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div key="settings" className="surface-card animate-fade-in p-5 sm:p-6">
           <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Status</p>
           <div className="flex flex-wrap gap-2">
             {form.status === 'draft' && (
@@ -252,8 +298,41 @@ export function FormBuilderPage() {
               Back to my forms
             </SecondaryButton>
           </div>
+
+          <div className="mt-6 border-t border-slate-100 pt-6">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-error uppercase">Danger zone</p>
+            {submissions.length > 0 ? (
+              <p className="text-sm text-muted">
+                This form has {submissions.length} response{submissions.length === 1 ? '' : 's'} and can't be
+                deleted. Archive it instead.
+              </p>
+            ) : (
+              <SecondaryButton tone="error" onClick={() => setIsDeleteModalOpen(true)}>
+                <FaTrash aria-hidden="true" />
+                Delete form
+              </SecondaryButton>
+            )}
+            {deleteError && (
+              <div className="mt-3">
+                <StatusMessage tone="error" message={deleteError} />
+              </div>
+            )}
+          </div>
         </div>
       )}
+
+      <Modal title="Delete this form?" isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
+        <p className="mb-6 text-sm text-muted">This permanently deletes "{form.name}". This can't be undone.</p>
+        <div className="flex justify-end gap-3">
+          <SecondaryButton onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting}>
+            Cancel
+          </SecondaryButton>
+          <SecondaryButton tone="error" onClick={() => void handleDelete()} disabled={isDeleting}>
+            <FaTrash aria-hidden="true" />
+            {isDeleting ? 'Deleting…' : 'Delete form'}
+          </SecondaryButton>
+        </div>
+      </Modal>
     </div>
   )
 }

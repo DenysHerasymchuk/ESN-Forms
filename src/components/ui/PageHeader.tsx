@@ -13,10 +13,10 @@ export function PageHeader({ title, badge, subtitle }: PageHeaderProps) {
   return (
     <div className="mb-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">{title}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">{title}</h1>
         {badge}
       </div>
-      {subtitle && <div className="mt-2 text-sm text-muted">{subtitle}</div>}
+      {subtitle && <div className="mt-3 text-sm text-muted">{subtitle}</div>}
     </div>
   )
 }

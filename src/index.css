@@ -10,11 +10,54 @@
   --color-error: #dc2626;
   --color-success: #166534;
 
-  --font-sans: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: "Poppins", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Fraunces", "Poppins", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --animate-fade-in: fade-in 0.25s ease-out;
-  --animate-fade-in-down: fade-in-down 0.2s ease-out;
+  /* Airier at small sizes for readability, tighter at display sizes for confidence. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 1.08;
+
+  /* Three deliberate steps (plus Tailwind's own `full` for pills/circles)
+     replacing the previously ad hoc md/lg/xl/2xl mix. */
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-2xl: 1.25rem;
+
+  /* Ink-tinted rather than generic black - ties elevation to the brand's
+     own ink color instead of a default Tailwind gray-black. */
+  --shadow-xs: 0 1px 2px rgba(16, 32, 51, 0.06);
+  --shadow-sm:
+    0 1px 2px rgba(16, 32, 51, 0.04),
+    0 4px 10px -4px rgba(16, 32, 51, 0.08);
+  --shadow-md:
+    0 2px 6px -2px rgba(16, 32, 51, 0.08),
+    0 8px 20px -6px rgba(16, 32, 51, 0.12);
+  --shadow-lg:
+    0 4px 10px -4px rgba(16, 32, 51, 0.1),
+    0 8px 24px -8px rgba(16, 32, 51, 0.16);
+
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --default-transition-timing-function: var(--ease-premium);
+  --default-transition-duration: 180ms;
+
+  --animate-fade-in: fade-in 0.3s var(--ease-premium);
+  --animate-fade-in-down: fade-in-down 0.22s var(--ease-premium);
+  --animate-rise: rise 0.45s var(--ease-premium);
+  --animate-modal-in: modal-in 0.22s var(--ease-premium);
 }
 
 @keyframes fade-in {
@@ -39,8 +82,37 @@
   }
 }
 
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 body {
   @apply font-sans text-ink;
+}
+
+/* The one shared card recipe - a near-invisible ink-tinted ring instead of
+   a flat border, plus the new ink-tinted shadow, is what turns a plain
+   bordered box into a surface that reads as intentionally elevated. */
+.surface-card {
+  @apply rounded-2xl bg-white shadow-sm ring-1 ring-ink/5;
 }
 
 @media (prefers-reduced-motion: reduce) {

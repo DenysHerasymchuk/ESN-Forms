@@ -22,13 +22,16 @@ export function Modal({ title, isOpen, onClose, children }: ModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4" onClick={onClose}>
+    <div
+      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4 transition-opacity"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        className="animate-modal-in surface-card relative w-full max-w-md overflow-hidden"
       >
         <div className="p-6 sm:p-8">
           <h2 id={titleId} className="mb-4 text-lg font-semibold text-ink">

@@ -42,10 +42,10 @@ export function BrandedFormShell({ heading, children, belowCard }: Props) {
             <SocialLinks />
           </div>
 
-          <div className="mx-auto w-full max-w-2xl xl:col-start-2 xl:row-start-1">
+          <div className="animate-rise mx-auto w-full max-w-2xl xl:col-start-2 xl:row-start-1">
             {heading}
             {children && (
-              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="surface-card relative overflow-hidden">
                 <div className="p-6 sm:p-10">{children}</div>
               </div>
             )}

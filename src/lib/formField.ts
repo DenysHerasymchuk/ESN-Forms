@@ -62,6 +62,38 @@ export function otherAnswerKey(fieldId: string): string {
   return `${fieldId}__other`
 }
 
+// The builder no longer asks the form owner to write help text/placeholders
+// by hand - these type-keyed defaults stand in instead, so every field
+// still gets sensible guidance without adding a step to building a form.
+const DEFAULT_HELP_TEXT: Record<FieldType, string> = {
+  text: 'Enter a short answer.',
+  textarea: 'Enter a longer answer.',
+  email: 'Enter a valid email address.',
+  url: 'Enter a link, including https://.',
+  number: 'Enter a number.',
+  date: 'Select a date.',
+  select: 'Choose one option from the list.',
+  radio: 'Choose one option.',
+  checkbox: 'Select all that apply.',
+  acknowledge: 'Check the box to confirm.',
+}
+
+export function defaultHelpText(type: FieldType): string {
+  return DEFAULT_HELP_TEXT[type]
+}
+
+const DEFAULT_PLACEHOLDER: Partial<Record<FieldType, string>> = {
+  text: 'Your answer',
+  textarea: 'Your answer',
+  email: 'you@example.com',
+  url: 'https://example.com',
+  number: '0',
+}
+
+export function defaultPlaceholder(type: FieldType): string | undefined {
+  return DEFAULT_PLACEHOLDER[type]
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function isEmpty(value: string | string[] | undefined): boolean {

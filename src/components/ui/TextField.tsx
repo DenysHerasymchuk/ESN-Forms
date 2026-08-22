@@ -60,7 +60,7 @@ export function TextField({
   const sharedClasses = `${inputBase} ${error ? inputInvalid : inputValid}`
 
   return (
-    <div className="mb-5">
+    <div className="mb-6">
       <label htmlFor={fieldId} className={`mb-1.5 block text-sm font-medium text-ink ${required ? requiredMark : ''}`}>
         {label}
       </label>

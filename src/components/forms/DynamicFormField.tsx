@@ -1,7 +1,7 @@
 import { TextField } from '../ui/TextField'
 import { SelectField } from '../ui/SelectField'
 import { OptionGroup } from '../ui/OptionGroup'
-import { otherAnswerKey, type Answers, type Field } from '../../lib/formField'
+import { defaultHelpText, defaultPlaceholder, otherAnswerKey, type Answers, type Field } from '../../lib/formField'
 
 type Props = {
   field: Field
@@ -18,7 +18,8 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
   const value = answers[field.id]
   const error = errors[field.id]
   const { config } = field
-  const helpText = field.helpText ?? undefined
+  const helpText = field.helpText ?? defaultHelpText(field.type)
+  const placeholder = config.placeholder ?? defaultPlaceholder(field.type)
 
   switch (field.type) {
     case 'text':
@@ -35,7 +36,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
           type={field.type}
           value={asString(value)}
           onChange={(next) => onChange(field.id, next)}
-          placeholder={config.placeholder}
+          placeholder={placeholder}
           pattern={config.pattern}
           minLength={config.minLength}
           maxLength={config.maxLength}
@@ -57,7 +58,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
           rows={config.rows}
           value={asString(value)}
           onChange={(next) => onChange(field.id, next)}
-          placeholder={config.placeholder}
+          placeholder={placeholder}
           minLength={config.minLength}
           maxLength={config.maxLength}
         />
@@ -145,7 +146,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
     case 'acknowledge': {
       const isChecked = value === config.value
       return (
-        <label className="mb-4 flex cursor-pointer items-center gap-3 rounded-lg border border-slate-300 px-4 py-3 transition-colors hover:bg-slate-50">
+        <label className="mb-4 flex cursor-pointer items-center gap-3 rounded-lg border border-slate-300 px-4 py-3 transition-colors hover:bg-ink/[0.02]">
           <input
             type="checkbox"
             checked={isChecked}

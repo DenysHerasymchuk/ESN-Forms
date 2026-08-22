@@ -1,6 +1,7 @@
 import { useId } from 'react'
 
-const optionRow = 'flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50'
+const optionRow =
+  'flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50 first:rounded-t-[calc(var(--radius-md)-1px)] last:rounded-b-[calc(var(--radius-md)-1px)]'
 const requiredMark = "after:ml-0.5 after:text-error after:content-['*']"
 
 export type OptionGroupOption = { value: string; label: string }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type BadgeTone = 'neutral' | 'success' | 'muted'
+export type BadgeTone = 'neutral' | 'success' | 'muted' | 'admin'
 
 type BadgeProps = {
   tone?: BadgeTone
@@ -9,9 +9,12 @@ type BadgeProps = {
 }
 
 const toneClasses: Record<BadgeTone, string> = {
-  neutral: 'border-slate-200 text-muted',
-  success: 'border-esn-green/30 text-esn-green',
-  muted: 'border-slate-200 text-slate-400',
+  neutral: 'border-slate-200 bg-slate-100 text-muted',
+  success: 'border-esn-green/20 bg-esn-green/8 text-esn-green',
+  muted: 'border-slate-200 bg-slate-50 text-slate-400',
+  // Marks admin-only surfaces/roles - kept to orange specifically so it
+  // never gets confused with a status tone (success/neutral/muted).
+  admin: 'border-esn-orange/20 bg-esn-orange/8 text-esn-orange',
 }
 
 export function Badge({ tone = 'neutral', icon, children }: BadgeProps) {

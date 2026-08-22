@@ -9,10 +9,6 @@ import { FieldConfigEditor } from './FieldConfigEditor'
 // card leaves the DOM.
 const REMOVE_ANIMATION_MS = 180
 
-// Cycled by index so a multi-question form reads as visibly ESN-branded
-// rather than one repeated blue bar down every card.
-const ACCENT_COLORS = ['border-l-esn-blue', 'border-l-esn-orange', 'border-l-esn-pink', 'border-l-esn-green']
-
 function createField(type: FieldType = 'text'): Field {
   return {
     id: crypto.randomUUID(),
@@ -23,6 +19,23 @@ function createField(type: FieldType = 'text'): Field {
     // state against - it's not something the builder UI exposes for editing.
     config: type === 'acknowledge' ? { value: 'acknowledged' } : {},
   }
+}
+
+// Offered only while the field list is empty - most forms end up asking
+// for these two anyway, so pre-filling them beats a blank list every time.
+const STARTER_FIELDS: { type: FieldType; label: string }[] = [
+  { type: 'text', label: 'Full name' },
+  { type: 'email', label: 'Email' },
+]
+
+function createStarterFields(): Field[] {
+  return STARTER_FIELDS.map(({ type, label }) => ({
+    id: crypto.randomUUID(),
+    type,
+    label,
+    required: true,
+    config: {},
+  }))
 }
 
 type Props = {
@@ -70,17 +83,24 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
   return (
     <div className="mb-6 space-y-4">
       {fields.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-slate-300 py-10 text-center text-sm text-muted">
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-slate-300 py-10 text-center text-sm text-muted">
           <span>No questions yet — add one below.</span>
+          <button
+            type="button"
+            onClick={() => onChange(createStarterFields())}
+            className="font-medium text-esn-blue hover:underline"
+          >
+            Or start with Full name &amp; Email
+          </button>
         </div>
       )}
 
       {fields.map((field, index) => (
         <div
           key={field.id}
-          className={`overflow-hidden rounded-xl border border-slate-200 border-l-4 bg-white shadow-sm transition-all duration-200 hover:shadow-md ${
-            ACCENT_COLORS[index % ACCENT_COLORS.length]
-          } ${removingId === field.id ? 'scale-95 opacity-0' : 'animate-fade-in opacity-100'}`}
+          className={`surface-card overflow-hidden transition-all duration-200 hover:shadow-md ${
+            removingId === field.id ? 'scale-95 opacity-0' : 'animate-fade-in opacity-100'
+          }`}
         >
           <div className="p-5 sm:p-6">
             <div className="mb-2 flex items-center justify-end gap-1">

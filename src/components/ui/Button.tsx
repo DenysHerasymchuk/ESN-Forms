@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react'
+import { secondaryButtonClassName, type ButtonTone } from './buttonStyles'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   isSubmitting?: boolean
@@ -27,16 +28,7 @@ export function PrimaryButton({ isSubmitting = false, disabled, className = '', 
   )
 }
 
-export type ButtonTone = 'blue' | 'orange' | 'pink' | 'green'
-
-const secondaryBase = `inline-flex items-center justify-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium transition duration-150 active:scale-[0.97] ${focusRing}`
-
-const secondaryToneClasses: Record<ButtonTone, string> = {
-  blue: 'border-esn-blue/30 text-esn-blue hover:bg-esn-blue/10',
-  orange: 'border-esn-orange/30 text-esn-orange hover:bg-esn-orange/10',
-  pink: 'border-esn-pink/30 text-esn-pink hover:bg-esn-pink/10',
-  green: 'border-esn-green/30 text-esn-green hover:bg-esn-green/10',
-}
+export type { ButtonTone }
 
 type SecondaryButtonProps = ButtonProps & {
   tone?: ButtonTone
@@ -47,7 +39,7 @@ export function SecondaryButton({ tone = 'blue', disabled, className = '', child
     <button
       type="button"
       disabled={disabled}
-      className={`${secondaryBase} ${secondaryToneClasses[tone]} ${disabled ? 'cursor-not-allowed opacity-50' : ''} ${className}`}
+      className={`${secondaryButtonClassName(tone)} ${disabled ? 'cursor-not-allowed opacity-50' : ''} ${className}`}
       {...props}
     >
       {children}

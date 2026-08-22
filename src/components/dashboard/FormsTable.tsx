@@ -22,12 +22,16 @@ type Props = {
   emptyMessage: ReactNode
   renderActions: (form: FormRow) => ReactNode
   showStatus?: boolean
+  // Adds an "Owner" column - only the admin "All forms" view needs this,
+  // since every other use of this table is already scoped to one owner.
+  ownerLabel?: (form: FormRow) => string
 }
 
-// Shared by "My forms" and the Archive page. Status collapses to icon-only
-// below `sm`; "Updated" and the action-button labels collapse below `md` -
-// actions get more room to breathe first since there are more of them.
-export function FormsTable({ forms, emptyMessage, renderActions, showStatus = true }: Props) {
+// Shared by "My forms", Archive, and the admin "All forms" view. Status
+// collapses to icon-only below `sm`; "Owner"/"Updated" and the
+// action-button labels collapse below `md` - actions get more room to
+// breathe first since there are more of them.
+export function FormsTable({ forms, emptyMessage, renderActions, showStatus = true, ownerLabel }: Props) {
   const columns: DataTableColumn<FormRow>[] = [
     {
       header: 'Name',
@@ -37,6 +41,15 @@ export function FormsTable({ forms, emptyMessage, renderActions, showStatus = tr
         </Link>
       ),
     },
+    ...(ownerLabel
+      ? [
+          {
+            header: 'Owner',
+            hideBelowLg: true,
+            cell: (form: FormRow) => ownerLabel(form),
+          },
+        ]
+      : []),
     ...(showStatus
       ? [
           {

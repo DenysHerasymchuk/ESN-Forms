@@ -43,7 +43,7 @@ export function SelectField({
   const errorId = `${fieldId}-error`
 
   return (
-    <div className={hideLabel ? '' : 'mb-5'}>
+    <div className={hideLabel ? '' : 'mb-6'}>
       <label
         htmlFor={fieldId}
         className={hideLabel ? 'sr-only' : `mb-1.5 block text-sm font-medium text-ink ${required ? requiredMark : ''}`}

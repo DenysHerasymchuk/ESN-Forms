@@ -27,6 +27,16 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
   }`
 }
 
+// Distinct accent (orange) for the admin-only links, so the "you're now in
+// admin territory" boundary is visible, not just enforced by who can see it.
+function adminNavLinkClassName({ isActive }: { isActive: boolean }) {
+  return `${navLinkBase} ${
+    isActive
+      ? 'border-esn-orange/30 bg-esn-orange/5 text-esn-orange'
+      : 'border-slate-200 text-esn-orange hover:bg-slate-50'
+  }`
+}
+
 export function AppShell({ children }: Props) {
   const { user, profile, signOut } = useAuth()
   const isAdmin = profile?.role === 'admin'
@@ -44,11 +54,15 @@ export function AppShell({ children }: Props) {
       </NavLink>
       {isAdmin && (
         <>
-          <NavLink to="/dashboard/admin/users" className={navLinkClassName} onClick={() => setIsNavOpen(false)}>
+          <div className="mx-1 hidden h-6 w-px bg-slate-200 lg:block" aria-hidden="true" />
+          <span className="px-2 text-xs font-semibold tracking-[0.14em] text-esn-orange uppercase lg:hidden">
+            Admin
+          </span>
+          <NavLink to="/dashboard/admin/users" className={adminNavLinkClassName} onClick={() => setIsNavOpen(false)}>
             <FaUsers aria-hidden="true" />
             Users
           </NavLink>
-          <NavLink to="/dashboard/admin/forms" className={navLinkClassName} onClick={() => setIsNavOpen(false)}>
+          <NavLink to="/dashboard/admin/forms" className={adminNavLinkClassName} onClick={() => setIsNavOpen(false)}>
             <FaClipboardList aria-hidden="true" />
             All forms
           </NavLink>
@@ -60,7 +74,7 @@ export function AppShell({ children }: Props) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <BrandStrip />
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200/70 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-8">
           {/* lg and up: full inline nav. Below lg: a dropdown menu instead. */}
           <nav className="hidden flex-wrap items-center gap-2 lg:flex">{navLinks}</nav>
