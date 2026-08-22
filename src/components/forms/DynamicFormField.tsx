@@ -37,13 +37,11 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
           value={asString(value)}
           onChange={(next) => onChange(field.id, next)}
           placeholder={placeholder}
-          pattern={config.pattern}
           minLength={config.minLength}
           maxLength={config.maxLength}
           min={config.min}
           max={config.max}
           step={config.step}
-          autoComplete={config.autoComplete}
         />
       )
 

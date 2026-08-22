@@ -21,10 +21,8 @@ export type FieldOption = {
 
 export type FieldConfig = {
   placeholder?: string
-  pattern?: string
   minLength?: number
   maxLength?: number
-  autoComplete?: string
   min?: number
   max?: number
   step?: number
@@ -136,10 +134,6 @@ function validateFieldValue(field: Field, value: string): string | null {
 
   if (type === 'date' && Number.isNaN(Date.parse(value))) {
     return `${label} must be a valid date`
-  }
-
-  if ((type === 'text' || type === 'textarea' || type === 'email' || type === 'url') && config.pattern) {
-    if (!new RegExp(config.pattern).test(value)) return `${label} is not in the expected format`
   }
 
   if (type === 'text' || type === 'textarea') {

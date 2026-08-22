@@ -19,7 +19,6 @@ type TextFieldProps = {
   onChange: (value: string) => void
   onBlur?: () => void
   placeholder?: string
-  pattern?: string
   minLength?: number
   maxLength?: number
   min?: number
@@ -42,7 +41,6 @@ export function TextField({
   onChange,
   onBlur,
   placeholder,
-  pattern,
   minLength,
   maxLength,
   min,
@@ -93,7 +91,6 @@ export function TextField({
           onChange={(event) => onChange(event.target.value)}
           onBlur={onBlur}
           placeholder={placeholder}
-          pattern={pattern}
           minLength={minLength}
           maxLength={maxLength}
           min={min}

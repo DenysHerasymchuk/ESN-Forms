@@ -13,7 +13,6 @@ export type FormRow = {
   description: string | null
   status: FormStatus
   fields: Field[]
-  settings: Record<string, unknown>
   created_at: string
   updated_at: string
   published_at: string | null
@@ -25,29 +24,6 @@ export type SubmissionRow = {
   form_id: string
   answers: Record<string, string | string[]>
   submitted_at: string
-}
-
-export type IntegrationProvider = 'google_sheets' | 'webhook' | 'email' | 'discord'
-
-export type IntegrationRow = {
-  id: string
-  form_id: string
-  provider: IntegrationProvider
-  enabled: boolean
-  config: Record<string, unknown>
-  created_at: string
-  updated_at: string
-}
-
-export type IntegrationDeliveryRow = {
-  id: string
-  submission_id: string
-  integration_id: string
-  status: 'pending' | 'success' | 'failed'
-  attempt_count: number
-  last_attempted_at: string | null
-  last_error: string | null
-  created_at: string
 }
 
 export type UserRole = 'member' | 'admin'
@@ -72,18 +48,6 @@ export type Database = {
         Row: SubmissionRow
         Insert: Partial<SubmissionRow> & Pick<SubmissionRow, 'form_id'>
         Update: Partial<SubmissionRow>
-        Relationships: []
-      }
-      integrations: {
-        Row: IntegrationRow
-        Insert: Partial<IntegrationRow> & Pick<IntegrationRow, 'form_id' | 'provider'>
-        Update: Partial<IntegrationRow>
-        Relationships: []
-      }
-      integration_deliveries: {
-        Row: IntegrationDeliveryRow
-        Insert: Partial<IntegrationDeliveryRow> & Pick<IntegrationDeliveryRow, 'submission_id' | 'integration_id'>
-        Update: Partial<IntegrationDeliveryRow>
         Relationships: []
       }
       profiles: {

@@ -1,5 +1,4 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
-import { EsncardPage } from './pages/legacy/EsncardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -23,7 +22,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/legacy/esncard" element={<EsncardPage />} />
       <Route path="/forms/:slug" element={<PublicFormPage />} />
       <Route path="/login" element={<LoginPage />} />
 

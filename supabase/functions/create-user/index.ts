@@ -7,7 +7,17 @@
 // own auth, not just trusting a valid JWT), then performs the privileged
 // auth.admin.createUser call.
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3'
-import { corsHeaders } from '../_shared/cors.ts'
+
+// Unlike submit-form (intentionally public, may legitimately be called
+// cross-origin), this function is admin-only and never meant to be called
+// from anywhere but the app's own frontend - scope it to that origin via
+// an env secret instead of the shared wildcard cors.ts. Falls back to '*'
+// only so the function keeps working before ALLOWED_ORIGIN is configured;
+// set it with `supabase secrets set ALLOWED_ORIGIN=https://<production-domain>`.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {

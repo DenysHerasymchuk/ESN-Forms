@@ -11,10 +11,6 @@ export type SelectOption = { value: string; label: string }
 type SelectFieldProps = {
   id?: string
   label: string
-  // Keeps the label in the accessibility tree but visually hides it, for
-  // contexts (like an inline question-type picker) where the surrounding
-  // UI already makes the field's purpose clear.
-  hideLabel?: boolean
   helpText?: string
   error?: string
   required?: boolean
@@ -28,7 +24,6 @@ type SelectFieldProps = {
 export function SelectField({
   id,
   label,
-  hideLabel = false,
   helpText,
   error,
   required,
@@ -43,11 +38,8 @@ export function SelectField({
   const errorId = `${fieldId}-error`
 
   return (
-    <div className={hideLabel ? '' : 'mb-6'}>
-      <label
-        htmlFor={fieldId}
-        className={hideLabel ? 'sr-only' : `mb-1.5 block text-sm font-medium text-ink ${required ? requiredMark : ''}`}
-      >
+    <div className="mb-6">
+      <label htmlFor={fieldId} className={`mb-1.5 block text-sm font-medium text-ink ${required ? requiredMark : ''}`}>
         {label}
       </label>
       {helpText && <p className="mb-1.5 text-sm text-muted">{helpText}</p>}
