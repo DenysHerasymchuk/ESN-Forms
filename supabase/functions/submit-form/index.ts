@@ -68,8 +68,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: 'Verification is required' }, 400)
   }
 
-  const remoteIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
-  const isVerified = await verifyTurnstileToken(turnstileToken, remoteIp)
+  // Local dev talks to this same live function (there's no separate local
+  // deployment), so a real Turnstile pass would otherwise be required even
+  // just to test locally. A matching dev-only secret - never the real
+  // TURNSTILE_SECRET_KEY, never committed anywhere - skips the real
+  // Cloudflare round-trip entirely. Unset (the default in production) means
+  // this branch never matches, so nothing changes for real traffic.
+  const devBypassToken = Deno.env.get('TURNSTILE_DEV_BYPASS')
+  const isVerified =
+    devBypassToken && turnstileToken === devBypassToken
+      ? true
+      : await verifyTurnstileToken(turnstileToken, req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null)
   if (!isVerified) {
     return jsonResponse({ success: false, error: 'Verification failed. Please try again.' }, 403)
   }

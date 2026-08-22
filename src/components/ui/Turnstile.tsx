@@ -56,6 +56,11 @@ export function Turnstile({ onVerify, onExpire }: Props) {
         sitekey: SITE_KEY,
         callback: onVerify,
         'expired-callback': onExpire,
+        theme: 'light',
+        // Stretches to the width of its container instead of Turnstile's
+        // fixed 300x65 default, so it reads as part of the form's own
+        // layout rather than an oddly-sized box dropped in on its own.
+        size: 'flexible',
       })
     })
 
@@ -70,5 +75,5 @@ export function Turnstile({ onVerify, onExpire }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return <div ref={containerRef} className="my-4" />
+  return <div ref={containerRef} className="mb-6 w-full" />
 }

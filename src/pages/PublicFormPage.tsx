@@ -91,7 +91,7 @@ export function PublicFormPage() {
         <PageHeader title={form.name} subtitle={form.description ? <Markdown>{form.description}</Markdown> : undefined} />
       }
     >
-      <DynamicForm fields={form.fields} onSubmit={handleSubmit} />
+      <DynamicForm formId={form.id} fields={form.fields} onSubmit={handleSubmit} />
     </BrandedFormShell>
   )
 }
