@@ -10,9 +10,10 @@
 </p>
 
 <h1 align="center">ESN Geel Forms</h1>
-ESN Forms is a form-building platform built for ESN Geel: any member can create, publish, and manage their own registration forms — no more one-off Google Forms per event.
 
-Sign in, build a form with the field types you need (short answer, email, dropdown, checkboxes, acknowledgements, and more), publish it to get a shareable public link, and watch responses come in from the built-in submissions view. Admins can manage every member's forms and promote/demote accounts from a dedicated admin area.
+ESN Forms is ESN Geel's own form-building platform — any member can create, publish, and manage registration forms for their events, without relying on a separate Google Form each time.
+
+Sign in, build a form from a range of field types (short answer, email, dropdowns, checkboxes, acknowledgements, and more), publish it for a shareable public link, and track responses in the built-in submissions view. Admins can oversee every member's forms and manage account roles from a dedicated admin area.
 
 ## Setup
 
