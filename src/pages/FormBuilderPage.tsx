@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { FaArrowLeft, FaBoxArchive, FaFloppyDisk, FaGlobe, FaLink, FaRotateLeft } from 'react-icons/fa6'
-import { PageHeader } from '../components/ui/PageHeader'
-import { Badge, type BadgeTone } from '../components/ui/Badge'
-import { TextField } from '../components/ui/TextField'
+import { FaArrowLeft, FaBoxArchive, FaFileLines, FaFloppyDisk, FaGlobe, FaLink, FaRotateLeft } from 'react-icons/fa6'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
 import { FieldListEditor } from '../components/builder/FieldListEditor'
@@ -18,17 +15,20 @@ import {
 } from '../lib/formsApi'
 import { getErrorMessage } from '../lib/errors'
 import type { Field } from '../lib/formField'
-import type { FormRow, FormStatus } from '../lib/database.types'
+import type { FormRow } from '../lib/database.types'
 
-const statusTone: Record<FormStatus, BadgeTone> = {
-  draft: 'neutral',
-  published: 'success',
-  archived: 'muted',
-}
+type Tab = 'questions' | 'settings'
+
+const titleInputClasses =
+  'w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 font-display text-3xl font-bold text-ink placeholder:text-slate-300 focus:border-esn-blue focus:outline-none focus:ring-0'
+const descriptionInputClasses =
+  'mt-3 w-full resize-none border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-base text-ink placeholder:text-slate-400 focus:border-esn-blue focus:outline-none focus:ring-0'
 
 export function FormBuilderPage() {
   const { formId } = useParams<{ formId: string }>()
   const navigate = useNavigate()
+
+  const [activeTab, setActiveTab] = useState<Tab>('questions')
 
   const [form, setForm] = useState<FormRow | null>(null)
   const [fields, setFields] = useState<Field[]>([])
@@ -123,47 +123,75 @@ export function FormBuilderPage() {
     return <StatusMessage tone="error" message={loadError || 'Form not found.'} />
   }
 
+  const tabClasses = (tab: Tab) =>
+    `border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
+      activeTab === tab ? 'border-esn-blue text-esn-blue' : 'border-transparent text-muted hover:text-ink'
+    }`
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="p-6 sm:p-10">
-        <PageHeader title={form.name} badge={<Badge tone={statusTone[form.status]}>{form.status}</Badge>} />
+    <div>
+      <div className="mb-6 flex items-center gap-8 border-b border-slate-200">
+        <button type="button" onClick={() => setActiveTab('questions')} className={tabClasses('questions')}>
+          Questions
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(`/dashboard/forms/${formId}/submissions`)}
+          className="flex items-center gap-1.5 border-b-2 border-transparent px-1 py-4 text-sm font-semibold text-muted transition-colors hover:text-ink"
+        >
+          <FaFileLines aria-hidden="true" />
+          Responses{submissionCount > 0 ? ` (${submissionCount})` : ''}
+        </button>
+        <button type="button" onClick={() => setActiveTab('settings')} className={tabClasses('settings')}>
+          Settings
+        </button>
+      </div>
 
-        <div className="border-t border-slate-200 pt-6">
-          <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Details</p>
-          <TextField label="Name" required value={name} onChange={setName} />
-          <TextField
-            label="Description"
-            multiline
-            helpText="Supports Markdown - **bold**, *italic*, [links](https://example.com), and lists."
-            value={description}
-            onChange={setDescription}
-          />
-          <SecondaryButton onClick={() => void handleSaveMeta()} disabled={isSavingMeta}>
-            <FaFloppyDisk aria-hidden="true" />
-            {isSavingMeta ? 'Saving…' : 'Save details'}
-          </SecondaryButton>
-          {metaError && (
-            <div className="mt-2">
-              <StatusMessage tone="error" message={metaError} />
+      {activeTab === 'questions' && (
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl border border-slate-200 border-t-4 border-t-esn-blue bg-white shadow-sm">
+            <div className="p-5 sm:p-6">
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Form name"
+                className={titleInputClasses}
+              />
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Form description (supports Markdown)"
+                rows={2}
+                className={descriptionInputClasses}
+              />
+              <div className="mt-4 flex justify-end">
+                <SecondaryButton onClick={() => void handleSaveMeta()} disabled={isSavingMeta}>
+                  <FaFloppyDisk aria-hidden="true" />
+                  {isSavingMeta ? 'Saving…' : 'Save details'}
+                </SecondaryButton>
+              </div>
+              {metaError && (
+                <div className="mt-2">
+                  <StatusMessage tone="error" message={metaError} />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
-        <div className="mt-6 border-t border-slate-200 pt-6">
-          <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Fields</p>
           <FieldListEditor fields={fields} onChange={setFields} hasSubmissions={submissionCount > 0} />
-          <PrimaryButton onClick={() => void handleSaveFields()} isSubmitting={isSavingFields} className="w-auto px-4">
-            <FaFloppyDisk aria-hidden="true" />
-            Save fields
-          </PrimaryButton>
-          {fieldsError && (
-            <div className="mt-3">
-              <StatusMessage tone="error" message={fieldsError} />
-            </div>
-          )}
-        </div>
 
-        <div className="mt-6 border-t border-slate-200 pt-6">
+          <div className="flex items-center justify-end gap-4">
+            {fieldsError && <StatusMessage tone="error" message={fieldsError} />}
+            <PrimaryButton onClick={() => void handleSaveFields()} isSubmitting={isSavingFields} className="w-auto px-6">
+              <FaFloppyDisk aria-hidden="true" />
+              Save questions
+            </PrimaryButton>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Status</p>
           <div className="flex flex-wrap gap-2">
             {form.status === 'draft' && (
@@ -217,15 +245,15 @@ export function FormBuilderPage() {
               <StatusMessage tone="error" message={lifecycleError} />
             </div>
           )}
-        </div>
 
-        <div className="mt-6">
-          <SecondaryButton onClick={() => navigate('/dashboard')}>
-            <FaArrowLeft aria-hidden="true" />
-            Back to my forms
-          </SecondaryButton>
+          <div className="mt-6 border-t border-slate-100 pt-6">
+            <SecondaryButton onClick={() => navigate('/dashboard')}>
+              <FaArrowLeft aria-hidden="true" />
+              Back to my forms
+            </SecondaryButton>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

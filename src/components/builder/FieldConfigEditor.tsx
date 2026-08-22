@@ -1,7 +1,8 @@
-import { FaChevronDown, FaChevronUp, FaPlus, FaTrash } from 'react-icons/fa6'
+import { useState } from 'react'
+import { FaChevronDown, FaChevronUp, FaRegCircle, FaSquare, FaXmark } from 'react-icons/fa6'
 import type { Field, FieldOption, FieldType } from '../../lib/formField'
 import { TextField } from '../ui/TextField'
-import { SecondaryButton } from '../ui/Button'
+import { SelectField, type SelectOption } from '../ui/SelectField'
 
 function slugify(value: string): string {
   return value
@@ -11,21 +12,45 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+const FIELD_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'text', label: 'Short answer' },
+  { value: 'textarea', label: 'Paragraph' },
+  { value: 'email', label: 'Email' },
+  { value: 'url', label: 'URL' },
+  { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
+  { value: 'select', label: 'Dropdown' },
+  { value: 'radio', label: 'Multiple choice' },
+  { value: 'checkbox', label: 'Checkboxes' },
+  { value: 'acknowledge', label: 'Acknowledgement' },
+]
+
 const OPTION_TYPES: FieldType[] = ['select', 'radio', 'checkbox']
-const optionInputClasses =
-  'w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-ink transition-colors focus:border-esn-blue focus:outline-none focus:ring-2 focus:ring-esn-blue/30'
+const inlineInputClasses =
+  'w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-lg text-ink placeholder:text-slate-400 transition-colors focus:border-esn-blue focus:outline-none focus:ring-0'
 
 type Props = {
   field: Field
   onChange: (field: Field) => void
 }
 
+// Mirrors the always-visible, directly-editable question layout of the
+// reference design: label + type picker up top, options (if any) inline,
+// and everything else (help text, length/min-max limits) tucked behind a
+// "More settings" disclosure rather than shown unconditionally.
 export function FieldConfigEditor({ field, onChange }: Props) {
+  const [showMore, setShowMore] = useState(false)
   const { config, type } = field
   const options = config.options ?? []
 
   function updateConfig(updates: Partial<Field['config']>) {
     onChange({ ...field, config: { ...config, ...updates } })
+  }
+
+  function handleTypeChange(nextType: string) {
+    // Config shapes differ per type - start clean rather than carrying
+    // over settings (e.g. options) that wouldn't make sense anymore.
+    onChange({ ...field, type: nextType as FieldType, config: {} })
   }
 
   function updateOptions(nextOptions: FieldOption[]) {
@@ -46,177 +71,177 @@ export function FieldConfigEditor({ field, onChange }: Props) {
     updateOptions(next)
   }
 
-  function updateOptionValue(index: number, value: string) {
-    const next = [...options]
-    next[index] = { ...next[index], value }
-    updateOptions(next)
-  }
-
-  function moveOption(index: number, direction: -1 | 1) {
-    const targetIndex = index + direction
-    if (targetIndex < 0 || targetIndex >= options.length) return
-    const next = [...options]
-    const [moved] = next.splice(index, 1)
-    next.splice(targetIndex, 0, moved)
-    updateOptions(next)
-  }
-
   function removeOption(index: number) {
     updateOptions(options.filter((_, i) => i !== index))
   }
 
+  const OptionIcon = type === 'checkbox' ? FaSquare : FaRegCircle
+
   return (
     <div>
-      <TextField label="Label" required value={field.label} onChange={(value) => onChange({ ...field, label: value })} />
-      <TextField
-        label="Help text"
-        value={field.helpText ?? ''}
-        onChange={(value) => onChange({ ...field, helpText: value || null })}
-      />
-      <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-ink">
+      <div className="flex flex-wrap items-start gap-4">
         <input
-          type="checkbox"
-          checked={field.required}
-          onChange={(event) => onChange({ ...field, required: event.target.checked })}
-          className="h-4 w-4 cursor-pointer accent-esn-blue"
+          value={field.label}
+          onChange={(event) => onChange({ ...field, label: event.target.value })}
+          placeholder="Question"
+          className={`${inlineInputClasses} min-w-0 flex-1`}
         />
-        Required
-      </label>
-
-      {(type === 'text' || type === 'textarea') && (
-        <>
-          <TextField
-            label="Placeholder"
-            value={config.placeholder ?? ''}
-            onChange={(value) => updateConfig({ placeholder: value || undefined })}
-          />
-          <TextField
-            label="Minimum length"
-            type="number"
-            value={config.minLength?.toString() ?? ''}
-            onChange={(value) => updateConfig({ minLength: value ? Number(value) : undefined })}
-          />
-          <TextField
-            label="Maximum length"
-            type="number"
-            value={config.maxLength?.toString() ?? ''}
-            onChange={(value) => updateConfig({ maxLength: value ? Number(value) : undefined })}
-          />
-          {type === 'textarea' && (
-            <TextField
-              label="Rows"
-              type="number"
-              value={config.rows?.toString() ?? ''}
-              onChange={(value) => updateConfig({ rows: value ? Number(value) : undefined })}
-            />
-          )}
-        </>
-      )}
-
-      {(type === 'email' || type === 'url' || type === 'date') && (
-        <TextField
-          label="Placeholder"
-          value={config.placeholder ?? ''}
-          onChange={(value) => updateConfig({ placeholder: value || undefined })}
-        />
-      )}
-
-      {type === 'number' && (
-        <>
-          <TextField
-            label="Placeholder"
-            value={config.placeholder ?? ''}
-            onChange={(value) => updateConfig({ placeholder: value || undefined })}
-          />
-          <TextField
-            label="Minimum"
-            type="number"
-            value={config.min?.toString() ?? ''}
-            onChange={(value) => updateConfig({ min: value ? Number(value) : undefined })}
-          />
-          <TextField
-            label="Maximum"
-            type="number"
-            value={config.max?.toString() ?? ''}
-            onChange={(value) => updateConfig({ max: value ? Number(value) : undefined })}
-          />
-          <TextField
-            label="Step"
-            type="number"
-            value={config.step?.toString() ?? ''}
-            onChange={(value) => updateConfig({ step: value ? Number(value) : undefined })}
-          />
-        </>
-      )}
+        <div className="w-48 shrink-0">
+          <SelectField label="Question type" hideLabel value={type} onChange={handleTypeChange} options={FIELD_TYPE_OPTIONS} />
+        </div>
+      </div>
 
       {OPTION_TYPES.includes(type) && (
-        <div className="mb-4">
-          <p className="mb-1.5 text-sm font-medium text-ink">Options</p>
-          {options.length === 0 && <p className="mb-2 text-sm text-muted">No options yet — add one below.</p>}
-          {options.length > 0 && (
-            <div className="divide-y divide-slate-200 rounded-lg border border-slate-300">
-              {options.map((option, index) => (
-                <div key={index} className="flex flex-wrap items-center gap-2 px-3 py-2">
-                  <input
-                    value={option.label}
-                    onChange={(event) => updateOptionLabel(index, event.target.value)}
-                    placeholder="Label"
-                    className={`${optionInputClasses} min-w-40 flex-1`}
-                  />
-                  <input
-                    value={option.value}
-                    onChange={(event) => updateOptionValue(index, event.target.value)}
-                    placeholder="Value"
-                    className={`${optionInputClasses} min-w-32 flex-1`}
-                  />
-                  <SecondaryButton onClick={() => moveOption(index, -1)} disabled={index === 0} aria-label="Move up">
-                    <FaChevronUp aria-hidden="true" />
-                  </SecondaryButton>
-                  <SecondaryButton
-                    onClick={() => moveOption(index, 1)}
-                    disabled={index === options.length - 1}
-                    aria-label="Move down"
-                  >
-                    <FaChevronDown aria-hidden="true" />
-                  </SecondaryButton>
-                  <SecondaryButton onClick={() => removeOption(index)} aria-label="Remove option">
-                    <FaTrash aria-hidden="true" />
-                  </SecondaryButton>
-                </div>
-              ))}
+        <div className="mt-4 space-y-2">
+          {options.map((option, index) => (
+            <div key={index} className="flex items-center gap-3">
+              <OptionIcon className="shrink-0 text-slate-400" aria-hidden="true" />
+              <input
+                value={option.label}
+                onChange={(event) => updateOptionLabel(index, event.target.value)}
+                placeholder={`Option ${index + 1}`}
+                className={`${inlineInputClasses} min-w-0 flex-1 text-base`}
+              />
+              <button
+                type="button"
+                onClick={() => removeOption(index)}
+                aria-label="Remove option"
+                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
+              >
+                <FaXmark aria-hidden="true" />
+              </button>
             </div>
-          )}
-          <SecondaryButton onClick={addOption} className="mt-2">
-            <FaPlus aria-hidden="true" />
-            Add option
-          </SecondaryButton>
+          ))}
 
-          {(type === 'select' || type === 'radio') && (
-            <div className="mt-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={config.allowOther ?? false}
-                  onChange={(event) =>
-                    updateConfig({
-                      allowOther: event.target.checked,
-                      otherOptionValue: event.target.checked ? (config.otherOptionValue ?? '__other__') : undefined,
-                    })
-                  }
-                  className="h-4 w-4 cursor-pointer accent-esn-blue"
-                />
-                Allow "Other" (respondent can type a custom answer)
-              </label>
+          {(type === 'select' || type === 'radio') && config.allowOther && (
+            <div className="flex items-center gap-3">
+              <OptionIcon className="shrink-0 text-slate-400" aria-hidden="true" />
+              <span className="flex-1 border-b border-dashed border-slate-300 py-2 text-base text-muted italic">
+                Other…
+              </span>
+              <button
+                type="button"
+                onClick={() => updateConfig({ allowOther: false, otherOptionValue: undefined })}
+                aria-label='Remove "Other"'
+                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
+              >
+                <FaXmark aria-hidden="true" />
+              </button>
             </div>
           )}
+
+          <div className="flex items-center gap-3 pt-1 pl-7 text-sm">
+            <button type="button" onClick={addOption} className="font-medium text-esn-blue hover:underline">
+              Add option
+            </button>
+            {(type === 'select' || type === 'radio') && !config.allowOther && (
+              <>
+                <span className="text-muted">or</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateConfig({ allowOther: true, otherOptionValue: config.otherOptionValue ?? '__other__' })
+                  }
+                  className="font-medium text-esn-blue hover:underline"
+                >
+                  Add &quot;Other&quot;
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
       {type === 'acknowledge' && (
-        <p className="mb-4 text-sm text-muted">
-          Respondents check a single box to acknowledge this. No further configuration needed.
-        </p>
+        <p className="mt-3 text-sm text-muted">Respondents check a single box to acknowledge this.</p>
       )}
+
+      <div className="mt-4 border-t border-slate-100 pt-3">
+        <button
+          type="button"
+          onClick={() => setShowMore((value) => !value)}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
+        >
+          {showMore ? <FaChevronUp aria-hidden="true" /> : <FaChevronDown aria-hidden="true" />}
+          More settings
+        </button>
+
+        {showMore && (
+          <div className="mt-3">
+            <TextField
+              label="Help text"
+              value={field.helpText ?? ''}
+              onChange={(value) => onChange({ ...field, helpText: value || null })}
+            />
+
+            {(type === 'text' || type === 'textarea') && (
+              <>
+                <TextField
+                  label="Placeholder"
+                  value={config.placeholder ?? ''}
+                  onChange={(value) => updateConfig({ placeholder: value || undefined })}
+                />
+                <TextField
+                  label="Minimum length"
+                  type="number"
+                  value={config.minLength?.toString() ?? ''}
+                  onChange={(value) => updateConfig({ minLength: value ? Number(value) : undefined })}
+                />
+                <TextField
+                  label="Maximum length"
+                  type="number"
+                  value={config.maxLength?.toString() ?? ''}
+                  onChange={(value) => updateConfig({ maxLength: value ? Number(value) : undefined })}
+                />
+                {type === 'textarea' && (
+                  <TextField
+                    label="Rows"
+                    type="number"
+                    value={config.rows?.toString() ?? ''}
+                    onChange={(value) => updateConfig({ rows: value ? Number(value) : undefined })}
+                  />
+                )}
+              </>
+            )}
+
+            {(type === 'email' || type === 'url' || type === 'date') && (
+              <TextField
+                label="Placeholder"
+                value={config.placeholder ?? ''}
+                onChange={(value) => updateConfig({ placeholder: value || undefined })}
+              />
+            )}
+
+            {type === 'number' && (
+              <>
+                <TextField
+                  label="Placeholder"
+                  value={config.placeholder ?? ''}
+                  onChange={(value) => updateConfig({ placeholder: value || undefined })}
+                />
+                <TextField
+                  label="Minimum"
+                  type="number"
+                  value={config.min?.toString() ?? ''}
+                  onChange={(value) => updateConfig({ min: value ? Number(value) : undefined })}
+                />
+                <TextField
+                  label="Maximum"
+                  type="number"
+                  value={config.max?.toString() ?? ''}
+                  onChange={(value) => updateConfig({ max: value ? Number(value) : undefined })}
+                />
+                <TextField
+                  label="Step"
+                  type="number"
+                  value={config.step?.toString() ?? ''}
+                  onChange={(value) => updateConfig({ step: value ? Number(value) : undefined })}
+                />
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
