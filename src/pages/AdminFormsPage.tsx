@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaClipboardList, FaFileLines, FaPen, FaShieldHalved } from 'react-icons/fa6'
+import { FaClipboardList, FaFileLines, FaPen, FaShieldHalved, FaTrash } from 'react-icons/fa6'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatusMessage } from '../components/ui/StatusMessage'
 import { SecondaryButton } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
+import { Modal } from '../components/ui/Modal'
 import { FormsTable } from '../components/dashboard/FormsTable'
-import { listAllFormsAsAdmin, listUsers } from '../lib/adminApi'
+import { adminDeleteForm, listAllFormsAsAdmin, listUsers } from '../lib/adminApi'
 import { getErrorMessage } from '../lib/errors'
 import type { FormRow } from '../lib/database.types'
 
@@ -16,6 +17,10 @@ export function AdminFormsPage() {
   const [ownerEmailById, setOwnerEmailById] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+
+  const [deletingForm, setDeletingForm] = useState<FormRow | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     void loadData()
@@ -32,6 +37,21 @@ export function AdminFormsPage() {
       setLoadError(getErrorMessage(error, 'Failed to load forms.'))
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingForm) return
+    setIsDeleting(true)
+    setDeleteError('')
+    try {
+      await adminDeleteForm(deletingForm.id)
+      setForms((prev) => prev.filter((form) => form.id !== deletingForm.id))
+      setDeletingForm(null)
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, 'Failed to delete the form.'))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -75,11 +95,37 @@ export function AdminFormsPage() {
                   <FaFileLines aria-hidden="true" />
                   <span className="hidden lg:inline">Submissions</span>
                 </SecondaryButton>
+                <SecondaryButton tone="error" onClick={() => setDeletingForm(form)}>
+                  <FaTrash aria-hidden="true" />
+                  <span className="hidden lg:inline">Delete</span>
+                </SecondaryButton>
               </>
             )}
           />
         )}
       </div>
+
+      <Modal title="Delete this form?" isOpen={deletingForm !== null} onClose={() => setDeletingForm(null)}>
+        <p className="mb-6 text-sm text-muted">
+          This permanently deletes "{deletingForm?.name}"{' '}
+          {deletingForm ? `(owned by ${ownerEmailById[deletingForm.owner_id] ?? 'unknown owner'})` : ''} and all of
+          its responses. This can't be undone.
+        </p>
+        {deleteError && (
+          <div className="mb-4">
+            <StatusMessage tone="error" message={deleteError} />
+          </div>
+        )}
+        <div className="flex justify-end gap-3">
+          <SecondaryButton onClick={() => setDeletingForm(null)} disabled={isDeleting}>
+            Cancel
+          </SecondaryButton>
+          <SecondaryButton tone="error" onClick={() => void handleConfirmDelete()} disabled={isDeleting}>
+            <FaTrash aria-hidden="true" />
+            {isDeleting ? 'Deleting…' : 'Delete form'}
+          </SecondaryButton>
+        </div>
+      </Modal>
     </div>
   )
 }

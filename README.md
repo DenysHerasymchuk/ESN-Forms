@@ -15,6 +15,8 @@ ESN Forms is ESN Geel's own form-building platform — any member can create, pu
 
 Sign in, build a form from a range of field types (short answer, email, dropdowns, checkboxes, acknowledgements, and more), publish it for a shareable public link, and track responses in the built-in submissions view. Admins can oversee every member's forms and manage account roles from a dedicated admin area.
 
+**Live at [esn-forms.vercel.app](https://esn-forms.vercel.app).**
+
 ## Setup
 
 ```
@@ -56,10 +58,13 @@ The Supabase project backing this app lives under `supabase/`:
   npx supabase link --project-ref <your-project-ref>
   npx supabase db push
   ```
-- **`supabase/functions/`** — Edge Functions for the two things a plain RLS policy can't do safely from the client: `submit-form` (the sole public write path into `submissions`, using the service-role key) and `create-user` (admin-only account creation — there's no public self-signup; an ESN Form Admin creates every account). Deploy with:
+- **`supabase/functions/`** — Edge Functions for things a plain RLS policy can't do safely from the client: `submit-form` (the sole public write path into `submissions`, verifies a Cloudflare Turnstile token before accepting), and the admin-only account/form management functions (`create-user`, `update-user`, `delete-user`, `delete-form`) — there's no public self-signup, and force-deleting a form or account with existing responses needs the service-role key. Deploy with:
   ```
   npx supabase functions deploy submit-form --use-api
   npx supabase functions deploy create-user --use-api
+  npx supabase functions deploy update-user --use-api
+  npx supabase functions deploy delete-user --use-api
+  npx supabase functions deploy delete-form --use-api
   ```
 
 Accounts are admin-only. Use the "Add user" button in the admin Users page (`/dashboard/admin/users`) once you have at least one admin account — bootstrapping the very first admin requires either running `create-user` once against an existing account and then promoting it via SQL, or inserting directly into `auth.users`/`profiles` through the Supabase dashboard.
@@ -74,9 +79,12 @@ ESN-Forms/
 ├── supabase/
 │   ├── migrations/                     Schema, RLS, functions/triggers (applied in order)
 │   └── functions/
-│       ├── submit-form/                Public submission endpoint (service-role write)
+│       ├── submit-form/                Public submission endpoint (Turnstile-verified, service-role write)
 │       ├── create-user/                Admin-only account creation
-│       └── _shared/cors.ts             Shared CORS headers
+│       ├── update-user/                Admin-only account editing (email/password)
+│       ├── delete-user/                Admin-only account deletion
+│       ├── delete-form/                Admin-only force-delete (a form + its responses)
+│       └── _shared/                    cors.ts, requireAdmin.ts (shared admin-auth check)
 └── src/
     ├── main.tsx                        React root
     ├── App.tsx                         Route table (public, authenticated, admin-only)

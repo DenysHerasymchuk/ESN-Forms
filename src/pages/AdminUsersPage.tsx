@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FaPlus, FaShieldHalved, FaUserMinus, FaUserPlus, FaUsers } from 'react-icons/fa6'
+import { FaPen, FaPlus, FaShieldHalved, FaTrash, FaUserMinus, FaUserPlus, FaUsers } from 'react-icons/fa6'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/Badge'
 import { Modal } from '../components/ui/Modal'
 import { TextField } from '../components/ui/TextField'
 import { useAuth } from '../auth/useAuth'
-import { createUserAsAdmin, listUsers, setUserRole } from '../lib/adminApi'
+import { createUserAsAdmin, deleteUserAsAdmin, listUsers, setUserRole, updateUserAsAdmin } from '../lib/adminApi'
 import { getErrorMessage } from '../lib/errors'
 import type { ProfileRow } from '../lib/database.types'
 
@@ -26,6 +26,16 @@ export function AdminUsersPage() {
   const [newPassword, setNewPassword] = useState('')
   const [createError, setCreateError] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+
+  const [editingUser, setEditingUser] = useState<ProfileRow | null>(null)
+  const [editEmail, setEditEmail] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+  const [editError, setEditError] = useState('')
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+
+  const [deletingUser, setDeletingUser] = useState<ProfileRow | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     void loadUsers()
@@ -77,6 +87,56 @@ export function AdminUsersPage() {
     }
   }
 
+  function openEdit(user: ProfileRow) {
+    setEditingUser(user)
+    setEditEmail(user.email)
+    setEditPassword('')
+    setEditError('')
+  }
+
+  async function handleSaveEdit() {
+    if (!editingUser) return
+    if (!editEmail.trim()) {
+      setEditError('Email is required.')
+      return
+    }
+    setIsSavingEdit(true)
+    setEditError('')
+    try {
+      const updates: { email?: string; password?: string } = {}
+      if (editEmail.trim() !== editingUser.email) updates.email = editEmail.trim()
+      if (editPassword) updates.password = editPassword
+
+      if (Object.keys(updates).length === 0) {
+        setEditingUser(null)
+        return
+      }
+
+      await updateUserAsAdmin(editingUser.id, updates)
+      setEditingUser(null)
+      void loadUsers()
+    } catch (error) {
+      setEditError(getErrorMessage(error, 'Failed to update the account.'))
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingUser) return
+    setIsDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteUserAsAdmin(deletingUser.id)
+      setUsers((prev) => prev.filter((user) => user.id !== deletingUser.id))
+      setDeletingUser(null)
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, 'Failed to delete the account.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const columns: DataTableColumn<ProfileRow>[] = [
     {
       header: 'Email',
@@ -101,15 +161,30 @@ export function AdminUsersPage() {
       cell: (user) => {
         const isSelf = user.id === currentProfile?.id
         return (
-          <SecondaryButton
-            tone={user.role === 'admin' ? 'pink' : 'orange'}
-            onClick={() => void handleToggleRole(user)}
-            disabled={isSelf || updatingId === user.id}
-            title={isSelf ? "You can't change your own role" : undefined}
-          >
-            {user.role === 'admin' ? <FaUserMinus aria-hidden="true" /> : <FaUserPlus aria-hidden="true" />}
-            {user.role === 'admin' ? 'Demote' : 'Promote'}
-          </SecondaryButton>
+          <div className="flex justify-end gap-2">
+            <SecondaryButton
+              tone={user.role === 'admin' ? 'pink' : 'orange'}
+              onClick={() => void handleToggleRole(user)}
+              disabled={isSelf || updatingId === user.id}
+              title={isSelf ? "You can't change your own role" : undefined}
+            >
+              {user.role === 'admin' ? <FaUserMinus aria-hidden="true" /> : <FaUserPlus aria-hidden="true" />}
+              <span className="hidden lg:inline">{user.role === 'admin' ? 'Demote' : 'Promote'}</span>
+            </SecondaryButton>
+            <SecondaryButton tone="blue" onClick={() => openEdit(user)}>
+              <FaPen aria-hidden="true" />
+              <span className="hidden lg:inline">Edit</span>
+            </SecondaryButton>
+            <SecondaryButton
+              tone="error"
+              onClick={() => setDeletingUser(user)}
+              disabled={isSelf}
+              title={isSelf ? "You can't delete your own account" : undefined}
+            >
+              <FaTrash aria-hidden="true" />
+              <span className="hidden lg:inline">Delete</span>
+            </SecondaryButton>
+          </div>
         )
       },
     },
@@ -174,6 +249,51 @@ export function AdminUsersPage() {
           <PrimaryButton onClick={() => void handleCreate()} isSubmitting={isCreating} className="w-auto px-4">
             Create account
           </PrimaryButton>
+        </div>
+      </Modal>
+
+      <Modal title="Edit user" isOpen={editingUser !== null} onClose={() => setEditingUser(null)}>
+        <TextField label="Email" type="email" required value={editEmail} onChange={setEditEmail} />
+        <TextField
+          label="New password"
+          type="password"
+          helpText="Leave blank to keep the current password."
+          value={editPassword}
+          onChange={setEditPassword}
+        />
+        {editError && (
+          <div className="mb-4">
+            <StatusMessage tone="error" message={editError} />
+          </div>
+        )}
+        <div className="flex justify-end gap-3">
+          <SecondaryButton onClick={() => setEditingUser(null)} disabled={isSavingEdit}>
+            Cancel
+          </SecondaryButton>
+          <PrimaryButton onClick={() => void handleSaveEdit()} isSubmitting={isSavingEdit} className="w-auto px-4">
+            Save changes
+          </PrimaryButton>
+        </div>
+      </Modal>
+
+      <Modal title="Delete this account?" isOpen={deletingUser !== null} onClose={() => setDeletingUser(null)}>
+        <p className="mb-6 text-sm text-muted">
+          This permanently deletes {deletingUser?.email}'s account, along with every form they own and all of its
+          responses. This can't be undone.
+        </p>
+        {deleteError && (
+          <div className="mb-4">
+            <StatusMessage tone="error" message={deleteError} />
+          </div>
+        )}
+        <div className="flex justify-end gap-3">
+          <SecondaryButton onClick={() => setDeletingUser(null)} disabled={isDeleting}>
+            Cancel
+          </SecondaryButton>
+          <SecondaryButton tone="error" onClick={() => void handleConfirmDelete()} disabled={isDeleting}>
+            <FaTrash aria-hidden="true" />
+            {isDeleting ? 'Deleting…' : 'Delete account'}
+          </SecondaryButton>
         </div>
       </Modal>
     </div>

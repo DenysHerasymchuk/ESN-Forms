@@ -18,6 +18,8 @@ import {
   updateFormFields,
   updateFormMeta,
 } from '../lib/formsApi'
+import { adminDeleteForm } from '../lib/adminApi'
+import { useAuth } from '../auth/useAuth'
 import { getErrorMessage } from '../lib/errors'
 import { otherAnswerKey, type Field } from '../lib/formField'
 import type { FormRow, SubmissionRow } from '../lib/database.types'
@@ -58,6 +60,8 @@ export function FormBuilderPage() {
   const { formId } = useParams<{ formId: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { profile } = useAuth()
+  const isAdmin = profile?.role === 'admin'
 
   const [activeTab, setActiveTab] = useState<Tab>(searchParams.get('tab') === 'submissions' ? 'submissions' : 'questions')
 
@@ -137,7 +141,14 @@ export function FormBuilderPage() {
     setIsDeleting(true)
     setDeleteError('')
     try {
-      await deleteForm(formId)
+      // Admins can force-delete a form even with responses (adminDeleteForm
+      // clears them first, server-side); a regular owner's delete stays
+      // blocked by the database whenever the form has any.
+      if (isAdmin) {
+        await adminDeleteForm(formId)
+      } else {
+        await deleteForm(formId)
+      }
       navigate('/dashboard')
     } catch (error) {
       setDeleteError(getErrorMessage(error, 'Failed to delete the form.'))
@@ -301,7 +312,7 @@ export function FormBuilderPage() {
 
           <div className="mt-6 border-t border-slate-100 pt-6">
             <p className="mb-3 text-xs font-semibold tracking-wide text-error uppercase">Danger zone</p>
-            {submissions.length > 0 ? (
+            {submissions.length > 0 && !isAdmin ? (
               <p className="text-sm text-muted">
                 This form has {submissions.length} response{submissions.length === 1 ? '' : 's'} and can't be
                 deleted. Archive it instead.
@@ -323,7 +334,13 @@ export function FormBuilderPage() {
 
       {form && (
         <Modal title="Delete this form?" isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
-          <p className="mb-6 text-sm text-muted">This permanently deletes "{form.name}". This can't be undone.</p>
+          <p className="mb-6 text-sm text-muted">
+            This permanently deletes "{form.name}"
+            {submissions.length > 0
+              ? ` and all ${submissions.length} of its response${submissions.length === 1 ? '' : 's'}`
+              : ''}
+            . This can't be undone.
+          </p>
           <div className="flex justify-end gap-3">
             <SecondaryButton onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting}>
               Cancel

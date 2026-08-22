@@ -41,20 +41,46 @@ export async function listAllFormsAsAdmin(): Promise<FormRow[]> {
 // Function rather than a direct table/auth call.
 export async function createUserAsAdmin(email: string, password: string): Promise<{ userId: string; email: string }> {
   const { data, error } = await supabase.functions.invoke('create-user', { body: { email, password } })
-
-  if (error) {
-    if (error instanceof FunctionsHttpError) {
-      let message = 'Failed to create the account'
-      try {
-        const body = (await error.context.json()) as { error?: string }
-        if (body.error) message = body.error
-      } catch {
-        // response body wasn't valid JSON - fall back to the generic message
-      }
-      throw new Error(message)
-    }
-    throw error
-  }
-
+  if (error) throw await toFriendlyError(error, 'Failed to create the account')
   return data as { userId: string; email: string }
+}
+
+// Editing an account's email/password also goes through the Admin API -
+// pass only the field(s) that changed, the Edge Function updates whichever
+// were provided.
+export async function updateUserAsAdmin(
+  userId: string,
+  updates: { email?: string; password?: string },
+): Promise<{ userId: string; email: string }> {
+  const { data, error } = await supabase.functions.invoke('update-user', { body: { userId, ...updates } })
+  if (error) throw await toFriendlyError(error, 'Failed to update the account')
+  return data as { userId: string; email: string }
+}
+
+export async function deleteUserAsAdmin(userId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('delete-user', { body: { userId } })
+  if (error) throw await toFriendlyError(error, 'Failed to delete the account')
+}
+
+// Force-deletes a form even if it has submissions - clears the submissions
+// first, then the form, via the service-role client (which is why this is
+// an Edge Function, not a plain RLS-gated table delete like formsApi.ts's
+// owner-facing deleteForm, which stays blocked by design when responses
+// exist).
+export async function adminDeleteForm(formId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('delete-form', { body: { formId } })
+  if (error) throw await toFriendlyError(error, 'Failed to delete the form')
+}
+
+async function toFriendlyError(error: unknown, fallback: string): Promise<Error> {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = (await error.context.json()) as { error?: string }
+      if (body.error) return new Error(body.error)
+    } catch {
+      // response body wasn't valid JSON - fall back to the generic message
+    }
+    return new Error(fallback)
+  }
+  return error instanceof Error ? error : new Error(fallback)
 }
