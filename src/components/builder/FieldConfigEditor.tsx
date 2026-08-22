@@ -1,3 +1,4 @@
+import { FaChevronDown, FaChevronUp, FaPlus, FaTrash } from 'react-icons/fa6'
 import type { Field, FieldOption, FieldType } from '../../lib/formField'
 import { TextField } from '../ui/TextField'
 import { SecondaryButton } from '../ui/Button'
@@ -168,18 +169,25 @@ export function FieldConfigEditor({ field, onChange }: Props) {
                     placeholder="Value"
                     className={`${optionInputClasses} min-w-32 flex-1`}
                   />
-                  <SecondaryButton onClick={() => moveOption(index, -1)} disabled={index === 0}>
-                    Up
+                  <SecondaryButton onClick={() => moveOption(index, -1)} disabled={index === 0} aria-label="Move up">
+                    <FaChevronUp aria-hidden="true" />
                   </SecondaryButton>
-                  <SecondaryButton onClick={() => moveOption(index, 1)} disabled={index === options.length - 1}>
-                    Down
+                  <SecondaryButton
+                    onClick={() => moveOption(index, 1)}
+                    disabled={index === options.length - 1}
+                    aria-label="Move down"
+                  >
+                    <FaChevronDown aria-hidden="true" />
                   </SecondaryButton>
-                  <SecondaryButton onClick={() => removeOption(index)}>Remove</SecondaryButton>
+                  <SecondaryButton onClick={() => removeOption(index)} aria-label="Remove option">
+                    <FaTrash aria-hidden="true" />
+                  </SecondaryButton>
                 </div>
               ))}
             </div>
           )}
           <SecondaryButton onClick={addOption} className="mt-2">
+            <FaPlus aria-hidden="true" />
             Add option
           </SecondaryButton>
 

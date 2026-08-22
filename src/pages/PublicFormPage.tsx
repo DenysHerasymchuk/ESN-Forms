@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { CenteredCardShell } from '../components/layout/CenteredCardShell'
+import { BrandedFormShell } from '../components/layout/BrandedFormShell'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Markdown } from '../components/ui/Markdown'
 import { DynamicForm, type SubmitResult } from '../components/forms/DynamicForm'
 import { getPublishedFormBySlug } from '../lib/formsApi'
 import { supabase } from '../lib/supabaseClient'
@@ -63,29 +64,34 @@ export function PublicFormPage() {
 
   if (loadState === 'loading') {
     return (
-      <CenteredCardShell>
+      <BrandedFormShell>
         <p role="status" aria-live="polite" className="text-sm text-muted">
           Loading…
         </p>
-      </CenteredCardShell>
+      </BrandedFormShell>
     )
   }
 
   if (loadState === 'not-found' || !form) {
     return (
-      <CenteredCardShell>
-        <PageHeader
-          title="This form isn't available"
-          subtitle="It may have been unpublished, or the link may be incorrect."
-        />
-      </CenteredCardShell>
+      <BrandedFormShell
+        heading={
+          <PageHeader
+            title="This form isn't available"
+            subtitle="It may have been unpublished, or the link may be incorrect."
+          />
+        }
+      />
     )
   }
 
   return (
-    <CenteredCardShell>
-      <PageHeader title={form.name} subtitle={form.description ?? undefined} />
+    <BrandedFormShell
+      heading={
+        <PageHeader title={form.name} subtitle={form.description ? <Markdown>{form.description}</Markdown> : undefined} />
+      }
+    >
       <DynamicForm fields={form.fields} onSubmit={handleSubmit} />
-    </CenteredCardShell>
+    </BrandedFormShell>
   )
 }

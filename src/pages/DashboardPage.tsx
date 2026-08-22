@@ -1,19 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { FaBoxArchive, FaFileLines, FaPen, FaPlus, FaTableList } from 'react-icons/fa6'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
-import { Badge, type BadgeTone } from '../components/ui/Badge'
-import { DataTable, type DataTableColumn } from '../components/ui/DataTable'
 import { StatusMessage } from '../components/ui/StatusMessage'
-import { createForm, listOwnerForms } from '../lib/formsApi'
+import { FormsTable } from '../components/dashboard/FormsTable'
+import { archiveForm, createForm, listOwnerForms } from '../lib/formsApi'
 import { getErrorMessage } from '../lib/errors'
-import type { FormRow, FormStatus } from '../lib/database.types'
-
-const statusTone: Record<FormStatus, BadgeTone> = {
-  draft: 'neutral',
-  published: 'success',
-  archived: 'muted',
-}
+import type { FormRow } from '../lib/database.types'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -22,6 +16,8 @@ export function DashboardPage() {
   const [loadError, setLoadError] = useState('')
   const [createError, setCreateError] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [archivingId, setArchivingId] = useState<string | null>(null)
+  const [archiveError, setArchiveError] = useState('')
 
   useEffect(() => {
     void loadForms()
@@ -32,7 +28,7 @@ export function DashboardPage() {
     setLoadError('')
     try {
       const result = await listOwnerForms()
-      setForms(result)
+      setForms(result.filter((form) => form.status !== 'archived'))
     } catch (error) {
       setLoadError(getErrorMessage(error, 'Failed to load your forms.'))
     } finally {
@@ -55,35 +51,20 @@ export function DashboardPage() {
     }
   }
 
-  const columns: DataTableColumn<FormRow>[] = [
-    {
-      header: 'Name',
-      cell: (form) => (
-        <Link to={`/dashboard/forms/${form.id}/edit`} className="font-medium text-esn-blue hover:underline">
-          {form.name}
-        </Link>
-      ),
-    },
-    {
-      header: 'Status',
-      cell: (form) => <Badge tone={statusTone[form.status]}>{form.status}</Badge>,
-    },
-    {
-      header: 'Updated',
-      cell: (form) => new Date(form.updated_at).toLocaleDateString(),
-    },
-    {
-      header: 'Actions',
-      cell: (form) => (
-        <div className="flex gap-2">
-          <SecondaryButton onClick={() => navigate(`/dashboard/forms/${form.id}/edit`)}>Edit</SecondaryButton>
-          <SecondaryButton onClick={() => navigate(`/dashboard/forms/${form.id}/submissions`)}>
-            Submissions
-          </SecondaryButton>
-        </div>
-      ),
-    },
-  ]
+  async function handleArchive(formId: string) {
+    setArchivingId(formId)
+    setArchiveError('')
+    try {
+      await archiveForm(formId)
+      // Archived forms don't belong on "My forms" anymore - drop it locally
+      // instead of a full refetch.
+      setForms((prev) => prev.filter((form) => form.id !== formId))
+    } catch (error) {
+      setArchiveError(getErrorMessage(error, 'Failed to archive the form.'))
+    } finally {
+      setArchivingId(null)
+    }
+  }
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -91,6 +72,7 @@ export function DashboardPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <PageHeader title="My forms" subtitle="Create and manage the forms you own." />
           <PrimaryButton onClick={() => void handleCreate()} isSubmitting={isCreating} className="w-auto px-4">
+            <FaPlus aria-hidden="true" />
             New form
           </PrimaryButton>
         </div>
@@ -100,17 +82,45 @@ export function DashboardPage() {
             <StatusMessage tone="error" message={createError} />
           </div>
         )}
+        {archiveError && (
+          <div className="mb-4">
+            <StatusMessage tone="error" message={archiveError} />
+          </div>
+        )}
 
         {isLoading ? (
           <p className="text-sm text-muted">Loading…</p>
         ) : loadError ? (
           <StatusMessage tone="error" message={loadError} />
         ) : (
-          <DataTable
-            columns={columns}
-            rows={forms}
-            getRowKey={(form) => form.id}
-            emptyMessage="You haven't created any forms yet."
+          <FormsTable
+            forms={forms}
+            emptyMessage={
+              <>
+                <FaTableList className="text-2xl text-slate-300" aria-hidden="true" />
+                <span>You haven't created any forms yet.</span>
+              </>
+            }
+            renderActions={(form) => (
+              <>
+                <SecondaryButton tone="blue" onClick={() => navigate(`/dashboard/forms/${form.id}/edit`)}>
+                  <FaPen aria-hidden="true" />
+                  <span className="hidden lg:inline">Edit</span>
+                </SecondaryButton>
+                <SecondaryButton tone="orange" onClick={() => navigate(`/dashboard/forms/${form.id}/submissions`)}>
+                  <FaFileLines aria-hidden="true" />
+                  <span className="hidden lg:inline">Submissions</span>
+                </SecondaryButton>
+                <SecondaryButton
+                  tone="pink"
+                  onClick={() => void handleArchive(form.id)}
+                  disabled={archivingId === form.id}
+                >
+                  <FaBoxArchive aria-hidden="true" />
+                  <span className="hidden lg:inline">Archive</span>
+                </SecondaryButton>
+              </>
+            )}
           />
         )}
       </div>

@@ -3,18 +3,26 @@ import type { ReactNode } from 'react'
 export type DataTableColumn<T> = {
   header: string
   cell: (row: T) => ReactNode
+  // Hides this column below the lg breakpoint (i.e. also hidden at md) -
+  // for secondary info (e.g. a last-updated date) that isn't essential
+  // until there's real room for it.
+  hideBelowLg?: boolean
+  // Aligns both the header label and the cell content - set to 'right' for
+  // columns whose cell content is itself right-aligned (e.g. action
+  // buttons), so the header doesn't float on the opposite side.
+  align?: 'left' | 'right'
 }
 
 type DataTableProps<T> = {
   columns: DataTableColumn<T>[]
   rows: T[]
   getRowKey: (row: T) => string
-  emptyMessage?: string
+  emptyMessage?: ReactNode
 }
 
 export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'Nothing to show yet.' }: DataTableProps<T>) {
   if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted">{emptyMessage}</p>
+    return <div className="flex flex-col items-center gap-2 py-12 text-center text-base text-muted">{emptyMessage}</div>
   }
 
   return (
@@ -26,7 +34,9 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'Nothing
               <th
                 key={column.header}
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-muted uppercase"
+                className={`px-5 py-4 text-sm font-semibold tracking-wide text-muted uppercase ${
+                  column.align === 'right' ? 'text-right' : 'text-left'
+                } ${column.hideBelowLg ? 'hidden lg:table-cell' : ''}`}
               >
                 {column.header}
               </th>
@@ -37,7 +47,12 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'Nothing
           {rows.map((row) => (
             <tr key={getRowKey(row)} className="hover:bg-slate-50">
               {columns.map((column) => (
-                <td key={column.header} className="px-4 py-3 text-sm text-ink">
+                <td
+                  key={column.header}
+                  className={`px-5 py-4 align-middle text-base text-ink ${
+                    column.align === 'right' ? 'text-right' : 'text-left'
+                  } ${column.hideBelowLg ? 'hidden lg:table-cell' : ''}`}
+                >
                   {column.cell(row)}
                 </td>
               ))}

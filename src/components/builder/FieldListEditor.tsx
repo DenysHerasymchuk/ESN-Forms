@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FaChevronDown, FaChevronUp, FaLayerGroup, FaPen, FaPlus, FaTrash, FaXmark } from 'react-icons/fa6'
 import type { Field, FieldType } from '../../lib/formField'
 import { SecondaryButton } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -66,7 +67,12 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
 
   return (
     <div className="mb-6">
-      {fields.length === 0 && <p className="mb-4 text-sm text-muted">No fields yet — add one below.</p>}
+      {fields.length === 0 && (
+        <div className="mb-4 flex flex-col items-center gap-2 rounded-lg border border-dashed border-slate-300 py-8 text-center text-sm text-muted">
+          <FaLayerGroup className="text-2xl text-slate-300" aria-hidden="true" />
+          <span>No fields yet — add one below.</span>
+        </div>
+      )}
 
       {fields.length > 0 && (
         <div className="divide-y divide-slate-200 rounded-lg border border-slate-300">
@@ -78,19 +84,25 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
                   <Badge>{field.type}</Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <SecondaryButton onClick={() => moveField(index, -1)} disabled={index === 0}>
-                    Up
+                  <SecondaryButton onClick={() => moveField(index, -1)} disabled={index === 0} aria-label="Move up">
+                    <FaChevronUp aria-hidden="true" />
                   </SecondaryButton>
-                  <SecondaryButton onClick={() => moveField(index, 1)} disabled={index === fields.length - 1}>
-                    Down
+                  <SecondaryButton
+                    onClick={() => moveField(index, 1)}
+                    disabled={index === fields.length - 1}
+                    aria-label="Move down"
+                  >
+                    <FaChevronDown aria-hidden="true" />
                   </SecondaryButton>
                   <SecondaryButton onClick={() => setExpandedId(expandedId === field.id ? null : field.id)}>
+                    {expandedId === field.id ? <FaXmark aria-hidden="true" /> : <FaPen aria-hidden="true" />}
                     {expandedId === field.id ? 'Close' : 'Edit'}
                   </SecondaryButton>
                   <SecondaryButton
                     onClick={() => removeField(field.id)}
                     title={hasSubmissions ? 'This form has responses; some edits are restricted' : undefined}
                   >
+                    <FaTrash aria-hidden="true" />
                     Remove
                   </SecondaryButton>
                 </div>
@@ -115,6 +127,7 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
           />
         </div>
         <SecondaryButton onClick={addField} className="mb-5">
+          <FaPlus aria-hidden="true" />
           Add field
         </SecondaryButton>
       </div>
