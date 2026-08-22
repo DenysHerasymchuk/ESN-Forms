@@ -54,11 +54,28 @@ export function FormsTable({ forms, emptyMessage, renderActions, showStatus = tr
       ? [
           {
             header: 'Status',
-            cell: (form: FormRow) => (
-              <Badge tone={statusTone[form.status]} icon={statusIcon[form.status]}>
-                <span className="hidden sm:inline">{form.status}</span>
-              </Badge>
-            ),
+            cell: (form: FormRow) => {
+              const badge = (
+                <Badge tone={statusTone[form.status]} icon={statusIcon[form.status]}>
+                  <span className="hidden sm:inline">{form.status}</span>
+                </Badge>
+              )
+              // Only a published form actually has a live public page to
+              // link to - draft/archived badges stay plain status labels.
+              return form.status === 'published' ? (
+                <a
+                  href={`/forms/${form.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open the public form"
+                  className="inline-block transition-opacity hover:opacity-80"
+                >
+                  {badge}
+                </a>
+              ) : (
+                badge
+              )
+            },
           },
         ]
       : []),

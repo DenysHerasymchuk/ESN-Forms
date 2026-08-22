@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FaChevronDown, FaChevronUp, FaCopy, FaPlus, FaTrash } from 'react-icons/fa6'
+import { FaChevronDown, FaChevronUp, FaCopy, FaPlus, FaTrash, FaUserPlus } from 'react-icons/fa6'
 import type { Field, FieldType } from '../../lib/formField'
 import { Switch } from '../ui/Switch'
 import { FieldConfigEditor } from './FieldConfigEditor'
@@ -21,8 +21,10 @@ function createField(type: FieldType = 'text'): Field {
   }
 }
 
-// Offered only while the field list is empty - most forms end up asking
-// for these two anyway, so pre-filling them beats a blank list every time.
+// Offered only while the list is empty - most forms end up asking for
+// these two anyway, so a one-click shortcut beats retyping them by hand
+// on a genuinely fresh form. Once there's at least one question, adding
+// more of anything already goes through "Add question" instead.
 const STARTER_FIELDS: { type: FieldType; label: string }[] = [
   { type: 'text', label: 'Full name' },
   { type: 'email', label: 'Email' },
@@ -83,15 +85,8 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
   return (
     <div className="mb-6 space-y-4">
       {fields.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-slate-300 py-10 text-center text-sm text-muted">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-slate-300 py-10 text-center text-sm text-muted">
           <span>No questions yet — add one below.</span>
-          <button
-            type="button"
-            onClick={() => onChange(createStarterFields())}
-            className="font-medium text-esn-blue hover:underline"
-          >
-            Or start with Full name &amp; Email
-          </button>
         </div>
       )}
 
@@ -156,14 +151,26 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
         </div>
       ))}
 
-      <button
-        type="button"
-        onClick={addField}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-4 text-sm font-medium text-esn-blue transition duration-150 hover:border-esn-blue/40 hover:bg-esn-blue/5 active:scale-[0.99]"
-      >
-        <FaPlus aria-hidden="true" />
-        Add question
-      </button>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={addField}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-4 text-sm font-medium text-esn-blue transition duration-150 hover:border-esn-blue/40 hover:bg-esn-blue/5 active:scale-[0.99]"
+        >
+          <FaPlus aria-hidden="true" />
+          Add question
+        </button>
+        {fields.length === 0 && (
+          <button
+            type="button"
+            onClick={() => onChange([...fields, ...createStarterFields()])}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-4 text-sm font-medium text-esn-orange transition duration-150 hover:border-esn-orange/40 hover:bg-esn-orange/5 active:scale-[0.99]"
+          >
+            <FaUserPlus aria-hidden="true" />
+            Add Full name &amp; Email
+          </button>
+        )}
+      </div>
     </div>
   )
 }

@@ -31,6 +31,7 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/archive" element={<ArchivePage />} />
+          <Route path="/dashboard/forms/new" element={<FormBuilderPage />} />
           <Route path="/dashboard/forms/:formId/edit" element={<FormBuilderPage />} />
         </Route>
       </Route>

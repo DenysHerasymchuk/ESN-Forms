@@ -1,15 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import {
-  FaArrowLeft,
-  FaBoxArchive,
-  FaFileLines,
-  FaFloppyDisk,
-  FaGlobe,
-  FaLink,
-  FaRotateLeft,
-  FaTrash,
-} from 'react-icons/fa6'
+import { FaBoxArchive, FaFileLines, FaFloppyDisk, FaGlobe, FaLink, FaRotateLeft, FaTrash } from 'react-icons/fa6'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
 import { DataTable, type DataTableColumn } from '../components/ui/DataTable'
@@ -18,6 +9,7 @@ import { Modal } from '../components/ui/Modal'
 import { FieldListEditor } from '../components/builder/FieldListEditor'
 import {
   archiveForm,
+  createForm,
   deleteForm,
   getOwnerForm,
   listSubmissions,
@@ -88,7 +80,12 @@ export function FormBuilderPage() {
   const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
-    if (!formId) return
+    if (!formId) {
+      // No id in the URL means a not-yet-created form - nothing to load,
+      // start editing straight away with an empty draft.
+      setIsLoading(false)
+      return
+    }
     void loadForm(formId)
   }, [formId])
 
@@ -110,7 +107,6 @@ export function FormBuilderPage() {
   }
 
   async function handleSave() {
-    if (!formId) return
     if (!name.trim()) {
       setSaveError('Give the form a name.')
       return
@@ -118,6 +114,13 @@ export function FormBuilderPage() {
     setIsSaving(true)
     setSaveError('')
     try {
+      if (!formId) {
+        // Nothing was created in the database until this first Save - an
+        // abandoned "New form" click never leaves a row behind.
+        const created = await createForm(name.trim(), description.trim() || null, fields)
+        navigate(`/dashboard/forms/${created.id}/edit`, { replace: true })
+        return
+      }
       await updateFormMeta(formId, { name: name.trim(), description: description.trim() || null })
       const updated = await updateFormFields(formId, fields)
       setForm(updated)
@@ -159,7 +162,7 @@ export function FormBuilderPage() {
     return <p className="text-sm text-muted">Loading…</p>
   }
 
-  if (loadError || !form || !formId) {
+  if (formId && (loadError || !form)) {
     return <StatusMessage tone="error" message={loadError || 'Form not found.'} />
   }
 
@@ -174,12 +177,16 @@ export function FormBuilderPage() {
         <button type="button" onClick={() => setActiveTab('questions')} className={tabClasses('questions')}>
           Questions
         </button>
-        <button type="button" onClick={() => setActiveTab('submissions')} className={tabClasses('submissions')}>
-          Submissions{submissions.length > 0 ? ` (${submissions.length})` : ''}
-        </button>
-        <button type="button" onClick={() => setActiveTab('settings')} className={tabClasses('settings')}>
-          Settings
-        </button>
+        {form && (
+          <>
+            <button type="button" onClick={() => setActiveTab('submissions')} className={tabClasses('submissions')}>
+              Submissions{submissions.length > 0 ? ` (${submissions.length})` : ''}
+            </button>
+            <button type="button" onClick={() => setActiveTab('settings')} className={tabClasses('settings')}>
+              Settings
+            </button>
+          </>
+        )}
       </div>
 
       {activeTab === 'questions' && (
@@ -208,7 +215,7 @@ export function FormBuilderPage() {
         </div>
       )}
 
-      {activeTab === 'submissions' && (
+      {activeTab === 'submissions' && form && (
         <div key="submissions" className="animate-fade-in space-y-4">
           <p className="text-sm text-muted">
             {submissions.length} response{submissions.length === 1 ? '' : 's'}
@@ -236,13 +243,13 @@ export function FormBuilderPage() {
         </div>
       )}
 
-      {activeTab === 'settings' && (
+      {activeTab === 'settings' && form && (
         <div key="settings" className="surface-card animate-fade-in p-5 sm:p-6">
           <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Status</p>
           <div className="flex flex-wrap gap-2">
             {form.status === 'draft' && (
               <SecondaryButton
-                onClick={() => void handleStatusChange(() => publishForm(formId))}
+                onClick={() => void handleStatusChange(() => publishForm(form.id))}
                 disabled={isChangingStatus}
               >
                 <FaGlobe aria-hidden="true" />
@@ -251,7 +258,7 @@ export function FormBuilderPage() {
             )}
             {(form.status === 'draft' || form.status === 'published') && (
               <SecondaryButton
-                onClick={() => void handleStatusChange(() => archiveForm(formId))}
+                onClick={() => void handleStatusChange(() => archiveForm(form.id))}
                 disabled={isChangingStatus}
               >
                 <FaBoxArchive aria-hidden="true" />
@@ -261,14 +268,14 @@ export function FormBuilderPage() {
             {form.status === 'archived' && (
               <>
                 <SecondaryButton
-                  onClick={() => void handleStatusChange(() => restoreForm(formId, 'draft'))}
+                  onClick={() => void handleStatusChange(() => restoreForm(form.id, 'draft'))}
                   disabled={isChangingStatus}
                 >
                   <FaRotateLeft aria-hidden="true" />
                   Restore to draft
                 </SecondaryButton>
                 <SecondaryButton
-                  onClick={() => void handleStatusChange(() => restoreForm(formId, 'published'))}
+                  onClick={() => void handleStatusChange(() => restoreForm(form.id, 'published'))}
                   disabled={isChangingStatus}
                 >
                   <FaGlobe aria-hidden="true" />
@@ -293,13 +300,6 @@ export function FormBuilderPage() {
           )}
 
           <div className="mt-6 border-t border-slate-100 pt-6">
-            <SecondaryButton onClick={() => navigate('/dashboard')}>
-              <FaArrowLeft aria-hidden="true" />
-              Back to my forms
-            </SecondaryButton>
-          </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-6">
             <p className="mb-3 text-xs font-semibold tracking-wide text-error uppercase">Danger zone</p>
             {submissions.length > 0 ? (
               <p className="text-sm text-muted">
@@ -321,18 +321,20 @@ export function FormBuilderPage() {
         </div>
       )}
 
-      <Modal title="Delete this form?" isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
-        <p className="mb-6 text-sm text-muted">This permanently deletes "{form.name}". This can't be undone.</p>
-        <div className="flex justify-end gap-3">
-          <SecondaryButton onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting}>
-            Cancel
-          </SecondaryButton>
-          <SecondaryButton tone="error" onClick={() => void handleDelete()} disabled={isDeleting}>
-            <FaTrash aria-hidden="true" />
-            {isDeleting ? 'Deleting…' : 'Delete form'}
-          </SecondaryButton>
-        </div>
-      </Modal>
+      {form && (
+        <Modal title="Delete this form?" isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
+          <p className="mb-6 text-sm text-muted">This permanently deletes "{form.name}". This can't be undone.</p>
+          <div className="flex justify-end gap-3">
+            <SecondaryButton onClick={() => setIsDeleteModalOpen(false)} disabled={isDeleting}>
+              Cancel
+            </SecondaryButton>
+            <SecondaryButton tone="error" onClick={() => void handleDelete()} disabled={isDeleting}>
+              <FaTrash aria-hidden="true" />
+              {isDeleting ? 'Deleting…' : 'Delete form'}
+            </SecondaryButton>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

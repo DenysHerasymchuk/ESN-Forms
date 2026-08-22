@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
 import { FormsTable } from '../components/dashboard/FormsTable'
-import { archiveForm, createForm, listOwnerForms } from '../lib/formsApi'
+import { archiveForm, listOwnerForms } from '../lib/formsApi'
 import { getErrorMessage } from '../lib/errors'
 import type { FormRow } from '../lib/database.types'
 
@@ -14,8 +14,6 @@ export function DashboardPage() {
   const [forms, setForms] = useState<FormRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [createError, setCreateError] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
   const [archivingId, setArchivingId] = useState<string | null>(null)
   const [archiveError, setArchiveError] = useState('')
 
@@ -33,21 +31,6 @@ export function DashboardPage() {
       setLoadError(getErrorMessage(error, 'Failed to load your forms.'))
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  // Creates a placeholder form immediately and jumps straight to its
-  // builder, where the "Details" section already lets you rename it -
-  // no separate name/description prompt up front.
-  async function handleCreate() {
-    setIsCreating(true)
-    setCreateError('')
-    try {
-      const created = await createForm('Untitled form', null)
-      navigate(`/dashboard/forms/${created.id}/edit`)
-    } catch (error) {
-      setCreateError(getErrorMessage(error, 'Failed to create the form.'))
-      setIsCreating(false)
     }
   }
 
@@ -71,17 +54,12 @@ export function DashboardPage() {
       <div className="p-6 sm:p-10">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <PageHeader title="My forms" subtitle="Create and manage the forms you own." />
-          <PrimaryButton onClick={() => void handleCreate()} isSubmitting={isCreating} className="w-auto px-4">
+          <PrimaryButton onClick={() => navigate('/dashboard/forms/new')} className="w-auto px-4">
             <FaPlus aria-hidden="true" />
             New form
           </PrimaryButton>
         </div>
 
-        {createError && (
-          <div className="mb-4">
-            <StatusMessage tone="error" message={createError} />
-          </div>
-        )}
         {archiveError && (
           <div className="mb-4">
             <StatusMessage tone="error" message={archiveError} />
