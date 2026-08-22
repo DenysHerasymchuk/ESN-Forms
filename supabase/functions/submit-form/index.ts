@@ -10,6 +10,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 type SubmitFormPayload = {
   slug?: unknown
   answers?: unknown
+  turnstileToken?: unknown
 }
 
 function jsonResponse(body: unknown, status: number): Response {
@@ -17,6 +18,29 @@ function jsonResponse(body: unknown, status: number): Response {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
+}
+
+// The Turnstile widget only proves a real browser passed a challenge in the
+// frontend - a script could just skip rendering it and POST here directly,
+// so the resulting token is independently re-checked against Cloudflare's
+// own endpoint before anything gets written.
+async function verifyTurnstileToken(token: string, remoteIp: string | null): Promise<boolean> {
+  const secret = Deno.env.get('TURNSTILE_SECRET_KEY') ?? ''
+  const body = new URLSearchParams({ secret, response: token })
+  if (remoteIp) body.set('remoteip', remoteIp)
+
+  try {
+    const result = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+    const data = (await result.json()) as { success?: boolean }
+    return data.success === true
+  } catch (error) {
+    console.error('submit-form: Turnstile verification request failed', error)
+    return false
+  }
 }
 
 Deno.serve(async (req) => {
@@ -35,9 +59,19 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: 'Invalid JSON body' }, 400)
   }
 
-  const { slug, answers } = payload
+  const { slug, answers, turnstileToken } = payload
   if (typeof slug !== 'string' || !slug || typeof answers !== 'object' || answers === null) {
     return jsonResponse({ success: false, error: 'A form "slug" and "answers" object are required' }, 400)
+  }
+
+  if (typeof turnstileToken !== 'string' || !turnstileToken) {
+    return jsonResponse({ success: false, error: 'Verification is required' }, 400)
+  }
+
+  const remoteIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+  const isVerified = await verifyTurnstileToken(turnstileToken, remoteIp)
+  if (!isVerified) {
+    return jsonResponse({ success: false, error: 'Verification failed. Please try again.' }, 403)
   }
 
   const supabase = createClient(

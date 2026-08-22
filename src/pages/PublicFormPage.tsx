@@ -44,8 +44,8 @@ export function PublicFormPage() {
     }
   }, [slug])
 
-  async function handleSubmit(answers: Answers): Promise<SubmitResult> {
-    const { error } = await supabase.functions.invoke('submit-form', { body: { slug, answers } })
+  async function handleSubmit(answers: Answers, turnstileToken: string): Promise<SubmitResult> {
+    const { error } = await supabase.functions.invoke('submit-form', { body: { slug, answers, turnstileToken } })
 
     if (error) {
       if (error instanceof FunctionsHttpError) {

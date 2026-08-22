@@ -3,12 +3,13 @@ import { validate, type Answers, type Field, type ValidationError } from '../../
 import { DynamicFormField } from './DynamicFormField'
 import { PrimaryButton } from '../ui/Button'
 import { StatusMessage } from '../ui/StatusMessage'
+import { Turnstile } from '../ui/Turnstile'
 
 export type SubmitResult = { success: true } | { success: false; error?: string; errors?: ValidationError[] }
 
 type Props = {
   fields: Field[]
-  onSubmit: (answers: Answers) => Promise<SubmitResult>
+  onSubmit: (answers: Answers, turnstileToken: string) => Promise<SubmitResult>
 }
 
 export function DynamicForm({ fields, onSubmit }: Props) {
@@ -17,6 +18,7 @@ export function DynamicForm({ fields, onSubmit }: Props) {
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const visibleFields = fields.filter((field) => !field.deprecated)
 
@@ -48,8 +50,13 @@ export function DynamicForm({ fields, onSubmit }: Props) {
       return
     }
 
+    if (!turnstileToken) {
+      setFormError('Please complete the verification below before submitting.')
+      return
+    }
+
     setIsSubmitting(true)
-    const result = await onSubmit(answers)
+    const result = await onSubmit(answers, turnstileToken)
     setIsSubmitting(false)
 
     if (!result.success) {
@@ -72,7 +79,8 @@ export function DynamicForm({ fields, onSubmit }: Props) {
       {visibleFields.map((field) => (
         <DynamicFormField key={field.id} field={field} answers={answers} errors={fieldErrors} onChange={handleChange} />
       ))}
-      <PrimaryButton type="submit" isSubmitting={isSubmitting} className="mt-8 w-full">
+      <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
+      <PrimaryButton type="submit" isSubmitting={isSubmitting} className="mt-4 w-full">
         {isSubmitting ? 'Submitting…' : 'Submit'}
       </PrimaryButton>
       <div className="mt-4">
