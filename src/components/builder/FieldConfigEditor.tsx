@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { FaChevronDown, FaChevronUp, FaRegCircle, FaSquare, FaXmark } from 'react-icons/fa6'
+import { FaChevronDown, FaRegCircle, FaSquare, FaXmark } from 'react-icons/fa6'
 import type { Field, FieldOption, FieldType } from '../../lib/formField'
 import { TextField } from '../ui/TextField'
-import { SelectField, type SelectOption } from '../ui/SelectField'
+import { CustomSelect, type SelectOption } from '../ui/CustomSelect'
 
 function slugify(value: string): string {
   return value
@@ -87,7 +87,7 @@ export function FieldConfigEditor({ field, onChange }: Props) {
           className={`${inlineInputClasses} min-w-0 flex-1`}
         />
         <div className="w-48 shrink-0">
-          <SelectField label="Question type" hideLabel value={type} onChange={handleTypeChange} options={FIELD_TYPE_OPTIONS} />
+          <CustomSelect ariaLabel="Question type" value={type} onChange={handleTypeChange} options={FIELD_TYPE_OPTIONS} />
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export function FieldConfigEditor({ field, onChange }: Props) {
                 type="button"
                 onClick={() => removeOption(index)}
                 aria-label="Remove option"
-                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
+                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-error/10 hover:text-error"
               >
                 <FaXmark aria-hidden="true" />
               </button>
@@ -160,14 +160,21 @@ export function FieldConfigEditor({ field, onChange }: Props) {
         <button
           type="button"
           onClick={() => setShowMore((value) => !value)}
+          aria-expanded={showMore}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
         >
-          {showMore ? <FaChevronUp aria-hidden="true" /> : <FaChevronDown aria-hidden="true" />}
+          <FaChevronDown
+            aria-hidden="true"
+            className={`transition-transform duration-200 ${showMore ? 'rotate-180' : ''}`}
+          />
           More settings
         </button>
 
-        {showMore && (
-          <div className="mt-3">
+        <div
+          className={`grid transition-[grid-template-rows] duration-200 ease-out ${showMore ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+        >
+          <div className="overflow-hidden">
+            <div className="mt-3">
             <TextField
               label="Help text"
               value={field.helpText ?? ''}
@@ -239,8 +246,9 @@ export function FieldConfigEditor({ field, onChange }: Props) {
                 />
               </>
             )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

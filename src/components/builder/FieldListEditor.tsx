@@ -1,7 +1,17 @@
+import { useState } from 'react'
 import { FaChevronDown, FaChevronUp, FaCopy, FaPlus, FaTrash } from 'react-icons/fa6'
 import type { Field, FieldType } from '../../lib/formField'
 import { Switch } from '../ui/Switch'
 import { FieldConfigEditor } from './FieldConfigEditor'
+
+// Matches the exit transition duration below - the actual removal from
+// state is delayed by this long so the fade/shrink is visible before the
+// card leaves the DOM.
+const REMOVE_ANIMATION_MS = 180
+
+// Cycled by index so a multi-question form reads as visibly ESN-branded
+// rather than one repeated blue bar down every card.
+const ACCENT_COLORS = ['border-l-esn-blue', 'border-l-esn-orange', 'border-l-esn-pink', 'border-l-esn-green']
 
 function createField(type: FieldType = 'text'): Field {
   return {
@@ -22,6 +32,8 @@ type Props = {
 }
 
 export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
+  const [removingId, setRemovingId] = useState<string | null>(null)
+
   function replaceField(updated: Field) {
     onChange(fields.map((field) => (field.id === updated.id ? updated : field)))
   }
@@ -36,7 +48,11 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
   }
 
   function removeField(id: string) {
-    onChange(fields.filter((field) => field.id !== id))
+    setRemovingId(id)
+    setTimeout(() => {
+      onChange(fields.filter((field) => field.id !== id))
+      setRemovingId((current) => (current === id ? null : current))
+    }, REMOVE_ANIMATION_MS)
   }
 
   function duplicateField(index: number) {
@@ -62,7 +78,9 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
       {fields.map((field, index) => (
         <div
           key={field.id}
-          className="overflow-hidden rounded-xl border border-slate-200 border-l-4 border-l-esn-blue bg-white shadow-sm"
+          className={`overflow-hidden rounded-xl border border-slate-200 border-l-4 bg-white shadow-sm transition-all duration-200 hover:shadow-md ${
+            ACCENT_COLORS[index % ACCENT_COLORS.length]
+          } ${removingId === field.id ? 'scale-95 opacity-0' : 'animate-fade-in opacity-100'}`}
         >
           <div className="p-5 sm:p-6">
             <div className="mb-2 flex items-center justify-end gap-1">
@@ -94,7 +112,7 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
                 onClick={() => duplicateField(index)}
                 aria-label="Duplicate question"
                 title="Duplicate question"
-                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
+                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-esn-orange/10 hover:text-esn-orange"
               >
                 <FaCopy aria-hidden="true" />
               </button>
@@ -103,7 +121,7 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
                 onClick={() => removeField(field.id)}
                 aria-label="Delete question"
                 title={hasSubmissions ? 'This form has responses; some edits are restricted' : 'Delete question'}
-                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
+                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-error/10 hover:text-error"
               >
                 <FaTrash aria-hidden="true" />
               </button>
@@ -121,7 +139,7 @@ export function FieldListEditor({ fields, onChange, hasSubmissions }: Props) {
       <button
         type="button"
         onClick={addField}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-4 text-sm font-medium text-esn-blue transition-colors hover:border-esn-blue/40 hover:bg-esn-blue/5"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-4 text-sm font-medium text-esn-blue transition duration-150 hover:border-esn-blue/40 hover:bg-esn-blue/5 active:scale-[0.99]"
       >
         <FaPlus aria-hidden="true" />
         Add question

@@ -83,7 +83,7 @@ export function AppShell({ children }: Props) {
                   className="fixed inset-0 z-10 cursor-default"
                   onClick={() => setIsNavOpen(false)}
                 />
-                <nav className="absolute top-full left-0 z-20 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+                <nav className="animate-fade-in-down absolute top-full left-0 z-20 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
                   {navLinks}
                 </nav>
               </>

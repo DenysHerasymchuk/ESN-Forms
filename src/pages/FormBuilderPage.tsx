@@ -148,7 +148,7 @@ export function FormBuilderPage() {
       </div>
 
       {activeTab === 'questions' && (
-        <div className="space-y-4">
+        <div key="questions" className="animate-fade-in space-y-4">
           <div className="overflow-hidden rounded-xl border border-slate-200 border-t-4 border-t-esn-blue bg-white shadow-sm">
             <div className="p-5 sm:p-6">
               <input
@@ -191,7 +191,7 @@ export function FormBuilderPage() {
       )}
 
       {activeTab === 'settings' && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div key="settings" className="animate-fade-in rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Status</p>
           <div className="flex flex-wrap gap-2">
             {form.status === 'draft' && (

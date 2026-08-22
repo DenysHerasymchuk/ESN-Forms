@@ -12,8 +12,40 @@
 
   --font-sans: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-display: "Poppins", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --animate-fade-in: fade-in 0.25s ease-out;
+  --animate-fade-in-down: fade-in-down 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 body {
   @apply font-sans text-ink;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

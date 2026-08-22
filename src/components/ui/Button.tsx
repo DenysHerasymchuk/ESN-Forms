@@ -7,7 +7,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 const focusRing =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-esn-blue'
 
-const primaryBase = `inline-flex items-center justify-center gap-2 rounded-lg py-3.5 text-base font-semibold transition-colors ${focusRing}`
+const primaryBase = `inline-flex items-center justify-center gap-2 rounded-lg py-3.5 text-base font-semibold transition duration-150 ${focusRing}`
 
 export function PrimaryButton({ isSubmitting = false, disabled, className = '', children, ...props }: ButtonProps) {
   const isDisabled = disabled || isSubmitting
@@ -16,7 +16,9 @@ export function PrimaryButton({ isSubmitting = false, disabled, className = '', 
       type="button"
       disabled={isDisabled}
       className={`${primaryBase} ${
-        isDisabled ? 'cursor-not-allowed bg-slate-200 text-slate-400' : 'bg-esn-blue text-white hover:bg-esn-blue/90'
+        isDisabled
+          ? 'cursor-not-allowed bg-slate-200 text-slate-400'
+          : 'bg-esn-blue text-white hover:bg-esn-blue/90 active:scale-[0.97]'
       } ${isSubmitting ? 'cursor-progress' : ''} ${className}`}
       {...props}
     >
@@ -27,7 +29,7 @@ export function PrimaryButton({ isSubmitting = false, disabled, className = '', 
 
 export type ButtonTone = 'blue' | 'orange' | 'pink' | 'green'
 
-const secondaryBase = `inline-flex items-center justify-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium transition-colors ${focusRing}`
+const secondaryBase = `inline-flex items-center justify-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium transition duration-150 active:scale-[0.97] ${focusRing}`
 
 const secondaryToneClasses: Record<ButtonTone, string> = {
   blue: 'border-esn-blue/30 text-esn-blue hover:bg-esn-blue/10',
