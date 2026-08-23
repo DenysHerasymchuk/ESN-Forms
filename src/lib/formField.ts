@@ -126,7 +126,7 @@ export function defaultPlaceholder(type: FieldType): string | undefined {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function isEmpty(value: string | string[] | undefined): boolean {
+export function isEmpty(value: string | string[] | undefined): boolean {
   if (value === undefined) return true
   if (Array.isArray(value)) return value.length === 0
   return value.trim().length === 0
@@ -238,4 +238,89 @@ export function validate(fields: Field[], answers: Answers): ValidationError[] {
   }
 
   return errors
+}
+
+// Live per-field feedback (a checkmark next to a field once it's filled in
+// correctly) needs the same rules validate() uses, but without the
+// required-ness check - an empty optional field isn't "invalid", it's just
+// not something to celebrate yet either, so it stays false until answered.
+export function isFieldAnswerValid(field: Field, value: string | string[] | undefined): boolean {
+  if (isEmpty(value) || value === undefined) return false
+
+  if (field.type === 'checkbox') {
+    const values = Array.isArray(value) ? value : [value]
+    return values.every((single) => validateOptionValue(field, single) === null)
+  }
+
+  if (Array.isArray(value)) return false
+
+  return validateFieldValue(field, value) === null
+}
+
+// The regex only checks shape (something@something.something) - it
+// happily accepts "user@gmial.com". This catches the common case of a
+// near-miss on a well-known domain and offers a correction, without
+// blocking submission (it's a guess, not a validation rule - someone with
+// an actual domain that happens to be one edit away from gmail.com should
+// still be able to submit as typed).
+const COMMON_EMAIL_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'hotmail.com',
+  'outlook.com',
+  'icloud.com',
+  'aol.com',
+  'live.com',
+  'msn.com',
+  'protonmail.com',
+  'gmx.com',
+  'hotmail.co.uk',
+  'yahoo.co.uk',
+  'outlook.co.uk',
+]
+
+function levenshteinDistance(a: string, b: string): number {
+  const rows = a.length + 1
+  const cols = b.length + 1
+  const distances: number[][] = Array.from({ length: rows }, () => new Array<number>(cols).fill(0))
+
+  for (let i = 0; i < rows; i++) distances[i][0] = i
+  for (let j = 0; j < cols; j++) distances[0][j] = j
+
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      distances[i][j] =
+        a[i - 1] === b[j - 1]
+          ? distances[i - 1][j - 1]
+          : 1 + Math.min(distances[i - 1][j], distances[i][j - 1], distances[i - 1][j - 1])
+    }
+  }
+
+  return distances[a.length][b.length]
+}
+
+export function suggestEmailCorrection(value: string): string | null {
+  const atIndex = value.lastIndexOf('@')
+  if (atIndex <= 0) return null
+
+  const localPart = value.slice(0, atIndex)
+  const domain = value.slice(atIndex + 1).toLowerCase()
+  if (!domain || domain.includes(' ') || COMMON_EMAIL_DOMAINS.includes(domain)) return null
+
+  let closestDomain: string | null = null
+  let closestDistance = Infinity
+  for (const candidate of COMMON_EMAIL_DOMAINS) {
+    const distance = levenshteinDistance(domain, candidate)
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestDomain = candidate
+    }
+  }
+
+  // A small edit distance (1-2 characters) is a plausible typo; anything
+  // further apart is more likely just a different, legitimate domain.
+  if (closestDomain && closestDistance > 0 && closestDistance <= 2) {
+    return `${localPart}@${closestDomain}`
+  }
+  return null
 }

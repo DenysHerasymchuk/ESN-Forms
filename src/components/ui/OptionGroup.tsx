@@ -10,6 +10,7 @@ type OptionGroupProps = {
   legend: string
   helpText?: string
   error?: string
+  success?: boolean
   required?: boolean
   type: 'radio' | 'checkbox'
   options: OptionGroupOption[]
@@ -22,6 +23,7 @@ export function OptionGroup({
   legend,
   helpText,
   error,
+  success,
   required,
   type,
   options,
@@ -45,10 +47,12 @@ export function OptionGroup({
 
   return (
     <fieldset className="mb-6">
-      <legend className={`mb-2 text-sm font-medium text-ink ${required ? requiredMark : ''}`}>{legend}</legend>
+      <legend className={`mb-2 block text-sm font-medium text-ink ${required ? requiredMark : ''}`}>{legend}</legend>
       {helpText && <p className="mb-2 text-sm text-muted">{helpText}</p>}
       <div
-        className={`divide-y divide-slate-200 rounded-lg border ${error ? 'border-error' : 'border-slate-300'}`}
+        className={`divide-y divide-slate-200 rounded-lg border transition-colors ${
+          error ? 'border-error' : success ? 'border-esn-green ring-2 ring-esn-green/25' : 'border-slate-300'
+        }`}
         role={type === 'radio' ? 'radiogroup' : 'group'}
         aria-describedby={error ? errorId : undefined}
       >

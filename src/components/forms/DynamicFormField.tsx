@@ -1,7 +1,15 @@
 import { TextField } from '../ui/TextField'
 import { SelectField } from '../ui/SelectField'
 import { OptionGroup } from '../ui/OptionGroup'
-import { defaultHelpText, defaultPlaceholder, otherAnswerKey, type Answers, type Field } from '../../lib/formField'
+import {
+  defaultHelpText,
+  defaultPlaceholder,
+  isFieldAnswerValid,
+  otherAnswerKey,
+  suggestEmailCorrection,
+  type Answers,
+  type Field,
+} from '../../lib/formField'
 
 type Props = {
   field: Field
@@ -17,13 +25,13 @@ function asString(value: string | string[] | undefined): string {
 export function DynamicFormField({ field, answers, errors, onChange }: Props) {
   const value = answers[field.id]
   const error = errors[field.id]
+  const success = !error && isFieldAnswerValid(field, value)
   const { config } = field
   const helpText = field.helpText ?? defaultHelpText(field.type)
   const placeholder = config.placeholder ?? defaultPlaceholder(field.type)
 
   switch (field.type) {
     case 'text':
-    case 'email':
     case 'url':
     case 'number':
     case 'date':
@@ -33,6 +41,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
           helpText={helpText}
           required={field.required}
           error={error}
+          success={success}
           type={field.type}
           value={asString(value)}
           onChange={(next) => onChange(field.id, next)}
@@ -45,6 +54,26 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
         />
       )
 
+    case 'email': {
+      const emailValue = asString(value)
+      const suggestion = suggestEmailCorrection(emailValue)
+      return (
+        <TextField
+          label={field.label}
+          helpText={helpText}
+          required={field.required}
+          error={error}
+          success={success}
+          type="email"
+          value={emailValue}
+          onChange={(next) => onChange(field.id, next)}
+          placeholder={placeholder}
+          suggestion={suggestion ?? undefined}
+          onAcceptSuggestion={suggestion ? () => onChange(field.id, suggestion) : undefined}
+        />
+      )
+    }
+
     case 'textarea':
       return (
         <TextField
@@ -52,6 +81,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
           helpText={helpText}
           required={field.required}
           error={error}
+          success={success}
           multiline
           rows={config.rows}
           value={asString(value)}
@@ -75,6 +105,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
             helpText={helpText}
             required={field.required}
             error={error}
+            success={success}
             value={selectedValue}
             onChange={(next) => onChange(field.id, next)}
             options={selectOptions}
@@ -106,6 +137,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
             helpText={helpText}
             required={field.required}
             error={error}
+            success={success}
             type="radio"
             options={radioOptions}
             value={selectedValue}
@@ -133,6 +165,7 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
           helpText={helpText}
           required={field.required}
           error={error}
+          success={success}
           type="checkbox"
           options={options}
           value={selectedValues}
@@ -144,7 +177,11 @@ export function DynamicFormField({ field, answers, errors, onChange }: Props) {
     case 'acknowledge': {
       const isChecked = value === config.value
       return (
-        <label className="mb-4 flex cursor-pointer items-center gap-3 rounded-lg border border-slate-300 px-4 py-3 transition-colors hover:bg-ink/[0.02]">
+        <label
+          className={`mb-4 flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors hover:bg-ink/[0.02] ${
+            isChecked ? 'border-esn-green ring-2 ring-esn-green/25' : 'border-slate-300'
+          }`}
+        >
           <input
             type="checkbox"
             checked={isChecked}

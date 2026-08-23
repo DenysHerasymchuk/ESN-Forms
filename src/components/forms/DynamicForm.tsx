@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { validate, type Answers, type Field, type ValidationError } from '../../lib/formField'
+import { FaCircleCheck } from 'react-icons/fa6'
+import { isEmpty, validate, type Answers, type Field, type ValidationError } from '../../lib/formField'
 import { DynamicFormField } from './DynamicFormField'
-import { PrimaryButton } from '../ui/Button'
 import { StatusMessage } from '../ui/StatusMessage'
 import { Turnstile } from '../ui/Turnstile'
 
@@ -43,6 +43,11 @@ export function DynamicForm({ formId, fields, onSubmit }: Props) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const visibleFields = fields.filter((field) => !field.deprecated)
+  const requiredFields = visibleFields.filter((field) => field.required)
+  const answeredRequiredCount = requiredFields.filter((field) => !isEmpty(answers[field.id])).length
+  const progressPercent =
+    requiredFields.length > 0 ? Math.round((answeredRequiredCount / requiredFields.length) * 100) : 0
+  const fillPercent = isSubmitting ? 100 : progressPercent
 
   function handleChange(fieldId: string, value: string | string[]) {
     setAnswers((prev) => ({ ...prev, [fieldId]: value }))
@@ -101,7 +106,13 @@ export function DynamicForm({ formId, fields, onSubmit }: Props) {
   }
 
   if (isSubmitted) {
-    return <StatusMessage tone="success" message="Thanks — your response has been recorded." />
+    return (
+      <div className="animate-rise flex flex-col items-center py-6 text-center">
+        <FaCircleCheck aria-hidden="true" className="animate-success-pop text-6xl text-success" />
+        <p className="mt-4 text-xl font-semibold text-ink">Thanks!</p>
+        <p className="mt-1 text-sm text-muted">Your response has been recorded.</p>
+      </div>
+    )
   }
 
   return (
@@ -114,9 +125,45 @@ export function DynamicForm({ formId, fields, onSubmit }: Props) {
       ) : (
         <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
       )}
-      <PrimaryButton type="submit" isSubmitting={isSubmitting} className="w-full">
-        {isSubmitting ? 'Submitting…' : 'Submit'}
-      </PrimaryButton>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        aria-label={isSubmitting ? 'Submitting…' : 'Submit'}
+        className={`relative isolate w-full overflow-hidden rounded-lg bg-slate-400 py-3.5 text-base font-semibold transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-esn-blue active:scale-[0.97] ${
+          isSubmitting ? 'cursor-progress' : ''
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 -z-10 bg-esn-blue transition-[width] duration-300 ease-out"
+          style={{ width: fillPercent === 100 ? '100%' : `max(0px, calc(${fillPercent}% - 12px))` }}
+        />
+        {/* Stays mounted always (rather than conditionally rendered) so its
+            `left` transition can animate it in from fully off-screen as
+            fillPercent first goes above 0 - conditionally mounting it
+            meant it had no prior state to transition from, so it just
+            popped into place instead of sweeping in with the blue fill.
+            At 100% there's no boundary left for it to sit at, so it just
+            fades out in place instead of visibly sliding away. */}
+        <span
+          aria-hidden="true"
+          className="wave-fill-edge absolute inset-y-0 -z-10 w-6 transition-[left,opacity] duration-300 ease-out"
+          style={{
+            left: fillPercent === 0 ? '-24px' : `calc(${fillPercent}% - 12px)`,
+            opacity: fillPercent === 100 ? 0 : 1,
+          }}
+        />
+        <span className="relative z-10 text-white">{isSubmitting ? 'Submitting…' : 'Submit'}</span>
+      </button>
+      {requiredFields.length > 0 && (
+        <p className="mt-2 flex items-center justify-between text-xs font-medium text-muted">
+          <span>
+            {answeredRequiredCount} of {requiredFields.length} required question
+            {requiredFields.length === 1 ? '' : 's'} answered
+          </span>
+          <span>{progressPercent}%</span>
+        </p>
+      )}
       <div className="mt-4">
         <StatusMessage tone={formError ? 'error' : 'idle'} message={formError} />
       </div>
