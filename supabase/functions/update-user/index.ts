@@ -3,6 +3,7 @@
 // browser.
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3'
 import { requireAdmin } from '../_shared/requireAdmin.ts'
+import { validatePassword } from '../_shared/passwordPolicy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
@@ -48,8 +49,11 @@ Deno.serve(async (req) => {
   if (!hasEmail && !hasPassword) {
     return jsonResponse({ success: false, error: 'Provide a new email and/or password' }, 400)
   }
-  if (hasPassword && (password as string).length < 6) {
-    return jsonResponse({ success: false, error: 'Password must be at least 6 characters' }, 400)
+  if (hasPassword) {
+    const passwordError = validatePassword(password as string)
+    if (passwordError) {
+      return jsonResponse({ success: false, error: passwordError }, 400)
+    }
   }
 
   const adminClient = createClient(

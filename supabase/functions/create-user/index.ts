@@ -7,6 +7,7 @@
 // own auth, not just trusting a valid JWT), then performs the privileged
 // auth.admin.createUser call.
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3'
+import { validatePassword } from '../_shared/passwordPolicy.ts'
 
 // Unlike submit-form (intentionally public, may legitimately be called
 // cross-origin), this function is admin-only and never meant to be called
@@ -70,11 +71,13 @@ Deno.serve(async (req) => {
   }
 
   const { email, password } = payload
-  if (typeof email !== 'string' || !email || typeof password !== 'string' || password.length < 6) {
-    return jsonResponse(
-      { success: false, error: 'A valid email and a password of at least 6 characters are required' },
-      400,
-    )
+  if (typeof email !== 'string' || !email || typeof password !== 'string' || !password) {
+    return jsonResponse({ success: false, error: 'A valid email and password are required' }, 400)
+  }
+
+  const passwordError = validatePassword(password)
+  if (passwordError) {
+    return jsonResponse({ success: false, error: passwordError }, 400)
   }
 
   const adminClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
