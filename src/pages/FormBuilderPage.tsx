@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { FaBoxArchive, FaFileLines, FaFloppyDisk, FaGlobe, FaLink, FaRotateLeft, FaTrash } from 'react-icons/fa6'
+import {
+  FaBoxArchive,
+  FaFileExcel,
+  FaFileLines,
+  FaFilePdf,
+  FaFloppyDisk,
+  FaGlobe,
+  FaLink,
+  FaRotateLeft,
+  FaSignature,
+  FaTrash,
+} from 'react-icons/fa6'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
 import { DataTable, type DataTableColumn } from '../components/ui/DataTable'
@@ -19,42 +30,13 @@ import {
   updateFormMeta,
 } from '../lib/formsApi'
 import { adminDeleteForm } from '../lib/adminApi'
+import { exportSubmissionsToExcel, previewAttendanceSignPdf, previewSubmissionsPdf } from '../lib/exportSubmissions'
 import { useAuth } from '../auth/useAuth'
 import { getErrorMessage } from '../lib/errors'
-import { otherAnswerKey, type Field } from '../lib/formField'
+import { formatAnswer, type Field } from '../lib/formField'
 import type { FormRow, SubmissionRow } from '../lib/database.types'
 
 type Tab = 'questions' | 'submissions' | 'settings'
-
-// select/radio/checkbox answers are stored as option values, not labels -
-// this resolves each stored value back to what the respondent actually
-// saw, including substituting in their free text for an "Other" pick.
-function formatAnswer(field: Field, answers: SubmissionRow['answers']): string {
-  const value = answers[field.id]
-
-  if (field.type === 'acknowledge') {
-    return value === field.config.value ? 'Yes' : '—'
-  }
-
-  if (value === undefined || (Array.isArray(value) ? value.length === 0 : value === '')) {
-    return '—'
-  }
-
-  if (field.type === 'checkbox' || field.type === 'select' || field.type === 'radio') {
-    const options = field.config.options ?? []
-    const labelFor = (raw: string) => {
-      if (field.config.allowOther && raw === field.config.otherOptionValue) {
-        const other = answers[otherAnswerKey(field.id)]
-        return typeof other === 'string' && other ? other : raw
-      }
-      return options.find((option) => option.value === raw)?.label ?? raw
-    }
-    const values = Array.isArray(value) ? value : [value]
-    return values.map(labelFor).join(', ')
-  }
-
-  return Array.isArray(value) ? value.join(', ') : value
-}
 
 export function FormBuilderPage() {
   const { formId } = useParams<{ formId: string }>()
@@ -82,6 +64,9 @@ export function FormBuilderPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+
+  const [exportKind, setExportKind] = useState<'excel' | 'pdf' | 'attendance' | null>(null)
+  const [exportError, setExportError] = useState('')
 
   useEffect(() => {
     if (!formId) {
@@ -153,6 +138,47 @@ export function FormBuilderPage() {
     } catch (error) {
       setDeleteError(getErrorMessage(error, 'Failed to delete the form.'))
       setIsDeleting(false)
+    }
+  }
+
+  async function handleExportExcel() {
+    if (!form) return
+    setExportError('')
+    setExportKind('excel')
+    try {
+      await exportSubmissionsToExcel(form, submissions)
+    } catch (error) {
+      setExportError(getErrorMessage(error, 'Failed to export submissions.'))
+    } finally {
+      setExportKind(null)
+    }
+  }
+
+  // PDF isn't downloaded directly - it opens in a new tab so it can be
+  // reviewed first, and the browser's own PDF viewer handles saving it from
+  // there. The tab is opened synchronously, in the same tick as the click,
+  // so browsers don't treat the later redirect (once the PDF build below
+  // finishes) as an unrequested popup.
+  async function handleOpenPdf(kind: 'pdf' | 'attendance') {
+    if (!form) return
+    setExportError('')
+    const previewWindow = window.open('', '_blank')
+    setExportKind(kind)
+    try {
+      const url =
+        kind === 'attendance'
+          ? await previewAttendanceSignPdf(form, submissions)
+          : await previewSubmissionsPdf(form, submissions)
+      if (previewWindow) {
+        previewWindow.location.href = url
+      } else {
+        setExportError('This was blocked by your browser. Please allow pop-ups for this site and try again.')
+      }
+    } catch (error) {
+      previewWindow?.close()
+      setExportError(getErrorMessage(error, 'Failed to generate the PDF.'))
+    } finally {
+      setExportKind(null)
     }
   }
 
@@ -309,6 +335,39 @@ export function FormBuilderPage() {
               <StatusMessage tone="error" message={lifecycleError} />
             </div>
           )}
+
+          <div className="mt-6 border-t border-slate-100 pt-6">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Export</p>
+            <div className="flex flex-wrap gap-2">
+              <SecondaryButton
+                onClick={() => void handleExportExcel()}
+                disabled={submissions.length === 0 || exportKind !== null}
+              >
+                <FaFileExcel aria-hidden="true" />
+                {exportKind === 'excel' ? 'Exporting…' : 'Export Excel'}
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => void handleOpenPdf('pdf')}
+                disabled={submissions.length === 0 || exportKind !== null}
+              >
+                <FaFilePdf aria-hidden="true" />
+                {exportKind === 'pdf' ? 'Loading…' : 'Export PDF'}
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => void handleOpenPdf('attendance')}
+                disabled={submissions.length === 0 || exportKind !== null}
+              >
+                <FaSignature aria-hidden="true" />
+                {exportKind === 'attendance' ? 'Loading…' : 'PDF ASign'}
+              </SecondaryButton>
+            </div>
+            {submissions.length === 0 && <p className="mt-3 text-sm text-muted">No responses yet — nothing to export.</p>}
+            {exportError && (
+              <div className="mt-3">
+                <StatusMessage tone="error" message={exportError} />
+              </div>
+            )}
+          </div>
 
           <div className="mt-6 border-t border-slate-100 pt-6">
             <p className="mb-3 text-xs font-semibold tracking-wide text-error uppercase">Danger zone</p>

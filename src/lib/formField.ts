@@ -60,6 +60,38 @@ export function otherAnswerKey(fieldId: string): string {
   return `${fieldId}__other`
 }
 
+// select/radio/checkbox answers are stored as option values, not labels -
+// this resolves each stored value back to what the respondent actually
+// saw, including substituting in their free text for an "Other" pick.
+// Shared by the on-screen submissions table and the export functions, so
+// both agree on the same human-readable rendering of an answer.
+export function formatAnswer(field: Field, answers: Answers): string {
+  const value = answers[field.id]
+
+  if (field.type === 'acknowledge') {
+    return value === field.config.value ? 'Yes' : '—'
+  }
+
+  if (value === undefined || (Array.isArray(value) ? value.length === 0 : value === '')) {
+    return '—'
+  }
+
+  if (field.type === 'checkbox' || field.type === 'select' || field.type === 'radio') {
+    const options = field.config.options ?? []
+    const labelFor = (raw: string) => {
+      if (field.config.allowOther && raw === field.config.otherOptionValue) {
+        const other = answers[otherAnswerKey(field.id)]
+        return typeof other === 'string' && other ? other : raw
+      }
+      return options.find((option) => option.value === raw)?.label ?? raw
+    }
+    const values = Array.isArray(value) ? value : [value]
+    return values.map(labelFor).join(', ')
+  }
+
+  return Array.isArray(value) ? value.join(', ') : value
+}
+
 // The builder no longer asks the form owner to write help text/placeholders
 // by hand - these type-keyed defaults stand in instead, so every field
 // still gets sensible guidance without adding a step to building a form.
