@@ -12,7 +12,7 @@ type TextFieldProps = {
   helpText?: string
   error?: string
   required?: boolean
-  type?: 'text' | 'email' | 'url' | 'number' | 'date' | 'password'
+  type?: 'text' | 'email' | 'url' | 'number' | 'date' | 'datetime-local' | 'password'
   multiline?: boolean
   rows?: number
   value: string

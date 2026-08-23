@@ -35,6 +35,23 @@ const ESN_BLUE: [number, number, number] = [37, 99, 235]
 const ESN_ORANGE: [number, number, number] = [249, 115, 22]
 const ESN_MUTED: [number, number, number] = [110, 120, 140]
 
+function formatPeriod(form: FormRow): string | null {
+  if (!form.opens_at || !form.closes_at) return null
+  const opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }
+  const opens = new Date(form.opens_at).toLocaleString(undefined, opts)
+  const closes = new Date(form.closes_at).toLocaleString(undefined, opts)
+  return `${opens} – ${closes}`
+}
+
+// event_date is a plain "YYYY-MM-DD" (no time/offset) - parsed via
+// new Date(string) it's read as UTC midnight, which can shift a day off in
+// timezones behind UTC once localized. Building the Date from explicit
+// local year/month/day avoids that.
+function formatEventDate(eventDate: string): string {
+  const [year, month, day] = eventDate.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, { dateStyle: 'medium' })
+}
+
 // Best-effort - a failed logo fetch (offline, blocked request) shouldn't
 // break the export, it should just fall back to a text-only header.
 async function loadLogoDataUrl(): Promise<string | null> {
@@ -69,16 +86,37 @@ async function buildPdf(form: FormRow, submissions: SubmissionRow[], kind: PdfKi
 
   doc.setProperties({ title: exportFileName(form, kind, 'pdf') })
 
+  // Logo box is vertically centered on the title+period text block (which
+  // visually spans roughly y=12 to y=23), not on the page edge - otherwise
+  // it reads as pinned to the top instead of sitting beside the text.
+  const titleX = logo ? 46 : 14
+
   if (logo) {
-    doc.addImage(logo, 'PNG', 14, 8, 20, 10)
+    doc.addImage(logo, 'PNG', 14, 11, 26, 13)
   }
   doc.setTextColor(...ESN_BLUE)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
-  doc.text(title, logo ? 40 : 14, 16)
+  doc.text(title, titleX, 16)
+
+  const period = formatPeriod(form)
+  if (period) {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(...ESN_MUTED)
+    doc.text(period, titleX, 22)
+  }
+
+  if (form.event_date) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(...ESN_ORANGE)
+    doc.text(formatEventDate(form.event_date), pageWidth - 14, 16, { align: 'right' })
+  }
+
   doc.setDrawColor(...ESN_ORANGE)
   doc.setLineWidth(0.8)
-  doc.line(14, 22, pageWidth - 14, 22)
+  doc.line(14, 27, pageWidth - 14, 27)
 
   const head = ['#', ...fields.map((field) => field.label || 'Untitled question'), 'Submitted at']
   const body = submissions.map((submission, index) => [String(index + 1), ...submissionRow(fields, submission)])
@@ -89,7 +127,7 @@ async function buildPdf(form: FormRow, submissions: SubmissionRow[], kind: PdfKi
   const signatureColumnIndex = head.length - 1
 
   autoTable(doc, {
-    startY: 28,
+    startY: 33,
     head: [head],
     body,
     theme: kind === 'attendance' ? 'grid' : 'striped',

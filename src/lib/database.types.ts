@@ -17,6 +17,12 @@ export type FormRow = {
   updated_at: string
   published_at: string | null
   archived_at: string | null
+  // The window the form is meant to accept responses in - required before
+  // it can leave draft (enforced by guard_form_status_transition). event_date
+  // is separate and optional: when the underlying event itself happens.
+  opens_at: string | null
+  closes_at: string | null
+  event_date: string | null
 }
 
 export type SubmissionRow = {

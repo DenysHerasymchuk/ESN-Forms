@@ -59,6 +59,20 @@ export async function updateFormMeta(
   return data
 }
 
+export async function updateFormPeriod(
+  formId: string,
+  period: { opensAt: string; closesAt: string; eventDate: string | null },
+): Promise<FormRow> {
+  const { data, error } = await supabase
+    .from('forms')
+    .update({ opens_at: period.opensAt, closes_at: period.closesAt, event_date: period.eventDate })
+    .eq('id', formId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 async function setFormStatus(formId: string, status: FormStatus): Promise<FormRow> {
   const { data, error } = await supabase.from('forms').update({ status }).eq('id', formId).select().single()
   if (error) throw error

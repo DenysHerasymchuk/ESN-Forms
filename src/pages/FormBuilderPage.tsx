@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa6'
 import { PrimaryButton, SecondaryButton } from '../components/ui/Button'
 import { StatusMessage } from '../components/ui/StatusMessage'
+import { TextField } from '../components/ui/TextField'
 import { DataTable, type DataTableColumn } from '../components/ui/DataTable'
 import { InlineHeadingField } from '../components/ui/InlineHeadingField'
 import { Modal } from '../components/ui/Modal'
@@ -28,6 +29,7 @@ import {
   restoreForm,
   updateFormFields,
   updateFormMeta,
+  updateFormPeriod,
 } from '../lib/formsApi'
 import { adminDeleteForm } from '../lib/adminApi'
 import { exportSubmissionsToExcel, previewAttendanceSignPdf, previewSubmissionsPdf } from '../lib/exportSubmissions'
@@ -37,6 +39,21 @@ import { formatAnswer, type Field } from '../lib/formField'
 import type { FormRow, SubmissionRow } from '../lib/database.types'
 
 type Tab = 'questions' | 'submissions' | 'settings'
+
+// <input type="datetime-local"> needs a timezone-less "YYYY-MM-DDTHH:mm" in
+// the viewer's own local time - opens_at/closes_at are stored as
+// timestamptz (absolute instants), so this is the display-side conversion;
+// toIsoFromLocal below is the inverse, done at save time.
+function toDatetimeLocalValue(iso: string | null): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function toIsoFromLocal(localValue: string): string {
+  return new Date(localValue).toISOString()
+}
 
 export function FormBuilderPage() {
   const { formId } = useParams<{ formId: string }>()
@@ -60,6 +77,12 @@ export function FormBuilderPage() {
 
   const [lifecycleError, setLifecycleError] = useState('')
   const [isChangingStatus, setIsChangingStatus] = useState(false)
+
+  const [opensAt, setOpensAt] = useState('')
+  const [closesAt, setClosesAt] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [periodError, setPeriodError] = useState('')
+  const [isSavingPeriod, setIsSavingPeriod] = useState(false)
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -87,6 +110,9 @@ export function FormBuilderPage() {
       setFields(loadedForm.fields)
       setName(loadedForm.name)
       setDescription(loadedForm.description ?? '')
+      setOpensAt(toDatetimeLocalValue(loadedForm.opens_at))
+      setClosesAt(toDatetimeLocalValue(loadedForm.closes_at))
+      setEventDate(loadedForm.event_date ?? '')
       setSubmissions(loadedSubmissions)
     } catch (error) {
       setLoadError(getErrorMessage(error, 'Failed to load this form.'))
@@ -138,6 +164,30 @@ export function FormBuilderPage() {
     } catch (error) {
       setDeleteError(getErrorMessage(error, 'Failed to delete the form.'))
       setIsDeleting(false)
+    }
+  }
+
+  async function handleSavePeriod() {
+    if (!form) return
+    setPeriodError('')
+    if (!opensAt || !closesAt) {
+      setPeriodError('Both an opens and a closes date/time are required.')
+      return
+    }
+    const opensIso = toIsoFromLocal(opensAt)
+    const closesIso = toIsoFromLocal(closesAt)
+    if (closesIso <= opensIso) {
+      setPeriodError('Closes must be after opens.')
+      return
+    }
+    setIsSavingPeriod(true)
+    try {
+      const updated = await updateFormPeriod(form.id, { opensAt: opensIso, closesAt: closesIso, eventDate: eventDate || null })
+      setForm(updated)
+    } catch (error) {
+      setPeriodError(getErrorMessage(error, 'Failed to save the active period.'))
+    } finally {
+      setIsSavingPeriod(false)
     }
   }
 
@@ -207,6 +257,8 @@ export function FormBuilderPage() {
     `border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
       activeTab === tab ? 'border-esn-blue text-esn-blue' : 'border-transparent text-muted hover:text-ink'
     }`
+
+  const hasPeriod = Boolean(form?.opens_at && form?.closes_at)
 
   return (
     <div className="animate-rise">
@@ -282,59 +334,87 @@ export function FormBuilderPage() {
 
       {activeTab === 'settings' && form && (
         <div key="settings" className="surface-card animate-fade-in p-5 sm:p-6">
-          <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Status</p>
-          <div className="flex flex-wrap gap-2">
-            {form.status === 'draft' && (
-              <SecondaryButton
-                onClick={() => void handleStatusChange(() => publishForm(form.id))}
-                disabled={isChangingStatus}
-              >
-                <FaGlobe aria-hidden="true" />
-                Publish
-              </SecondaryButton>
+          <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Active period</p>
+          <p className="mb-4 text-sm text-muted">
+            Every form needs an active period — when it opens and closes for responses — before it can be published
+            or archived.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Opens" type="datetime-local" required value={opensAt} onChange={setOpensAt} />
+            <TextField label="Closes" type="datetime-local" required value={closesAt} onChange={setClosesAt} />
+          </div>
+          <TextField
+            label="Event date (optional)"
+            helpText="When the actual event is happening, if different from the response period."
+            type="date"
+            value={eventDate}
+            onChange={setEventDate}
+          />
+          <div className="flex items-center justify-end gap-4">
+            {periodError && <StatusMessage tone="error" message={periodError} />}
+            <SecondaryButton onClick={() => void handleSavePeriod()} disabled={isSavingPeriod}>
+              {isSavingPeriod ? 'Saving…' : 'Save period'}
+            </SecondaryButton>
+          </div>
+
+          <div className="mt-6 border-t border-slate-100 pt-6">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Status</p>
+            {!hasPeriod && (
+              <p className="mb-3 text-sm text-muted">Set and save an active period above before publishing or archiving.</p>
             )}
-            {(form.status === 'draft' || form.status === 'published') && (
-              <SecondaryButton
-                onClick={() => void handleStatusChange(() => archiveForm(form.id))}
-                disabled={isChangingStatus}
-              >
-                <FaBoxArchive aria-hidden="true" />
-                Archive
-              </SecondaryButton>
-            )}
-            {form.status === 'archived' && (
-              <>
+            <div className="flex flex-wrap gap-2">
+              {form.status === 'draft' && (
                 <SecondaryButton
-                  onClick={() => void handleStatusChange(() => restoreForm(form.id, 'draft'))}
-                  disabled={isChangingStatus}
-                >
-                  <FaRotateLeft aria-hidden="true" />
-                  Restore to draft
-                </SecondaryButton>
-                <SecondaryButton
-                  onClick={() => void handleStatusChange(() => restoreForm(form.id, 'published'))}
-                  disabled={isChangingStatus}
+                  onClick={() => void handleStatusChange(() => publishForm(form.id))}
+                  disabled={isChangingStatus || !hasPeriod}
                 >
                   <FaGlobe aria-hidden="true" />
-                  Restore to published
+                  Publish
                 </SecondaryButton>
-              </>
+              )}
+              {(form.status === 'draft' || form.status === 'published') && (
+                <SecondaryButton
+                  onClick={() => void handleStatusChange(() => archiveForm(form.id))}
+                  disabled={isChangingStatus || !hasPeriod}
+                >
+                  <FaBoxArchive aria-hidden="true" />
+                  Archive
+                </SecondaryButton>
+              )}
+              {form.status === 'archived' && (
+                <>
+                  <SecondaryButton
+                    onClick={() => void handleStatusChange(() => restoreForm(form.id, 'draft'))}
+                    disabled={isChangingStatus}
+                  >
+                    <FaRotateLeft aria-hidden="true" />
+                    Restore to draft
+                  </SecondaryButton>
+                  <SecondaryButton
+                    onClick={() => void handleStatusChange(() => restoreForm(form.id, 'published'))}
+                    disabled={isChangingStatus}
+                  >
+                    <FaGlobe aria-hidden="true" />
+                    Restore to published
+                  </SecondaryButton>
+                </>
+              )}
+            </div>
+            {form.status === 'published' && (
+              <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
+                <FaLink aria-hidden="true" />
+                Public link:{' '}
+                <a href={`/forms/${form.slug}`} className="text-esn-blue hover:underline" target="_blank" rel="noreferrer">
+                  /forms/{form.slug}
+                </a>
+              </p>
+            )}
+            {lifecycleError && (
+              <div className="mt-3">
+                <StatusMessage tone="error" message={lifecycleError} />
+              </div>
             )}
           </div>
-          {form.status === 'published' && (
-            <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
-              <FaLink aria-hidden="true" />
-              Public link:{' '}
-              <a href={`/forms/${form.slug}`} className="text-esn-blue hover:underline" target="_blank" rel="noreferrer">
-                /forms/{form.slug}
-              </a>
-            </p>
-          )}
-          {lifecycleError && (
-            <div className="mt-3">
-              <StatusMessage tone="error" message={lifecycleError} />
-            </div>
-          )}
 
           <div className="mt-6 border-t border-slate-100 pt-6">
             <p className="mb-3 text-xs font-semibold tracking-wide text-esn-blue uppercase">Export</p>
