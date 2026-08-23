@@ -254,7 +254,7 @@ export function FormBuilderPage() {
   }
 
   const tabClasses = (tab: Tab) =>
-    `border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
+    `shrink-0 border-b-2 px-1 py-4 text-sm font-semibold whitespace-nowrap transition-colors ${
       activeTab === tab ? 'border-esn-blue text-esn-blue' : 'border-transparent text-muted hover:text-ink'
     }`
 
@@ -262,14 +262,15 @@ export function FormBuilderPage() {
 
   return (
     <div className="animate-rise">
-      <div className="mb-6 flex items-center gap-8 border-b border-slate-200">
+      <div className="mb-6 flex items-center justify-between gap-2 overflow-x-auto border-b border-slate-200 sm:justify-start sm:gap-8">
         <button type="button" onClick={() => setActiveTab('questions')} className={tabClasses('questions')}>
           Questions
         </button>
         {form && (
           <>
             <button type="button" onClick={() => setActiveTab('submissions')} className={tabClasses('submissions')}>
-              Submissions{submissions.length > 0 ? ` (${submissions.length})` : ''}
+              Submissions
+              {submissions.length > 0 ? <span className="hidden sm:inline"> ({submissions.length})</span> : ''}
             </button>
             <button type="button" onClick={() => setActiveTab('settings')} className={tabClasses('settings')}>
               Settings

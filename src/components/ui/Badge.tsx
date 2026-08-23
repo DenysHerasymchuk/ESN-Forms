@@ -5,6 +5,7 @@ export type BadgeTone = 'neutral' | 'success' | 'muted' | 'admin'
 type BadgeProps = {
   tone?: BadgeTone
   icon?: ReactNode
+  size?: 'sm' | 'md'
   children: ReactNode
 }
 
@@ -17,10 +18,15 @@ const toneClasses: Record<BadgeTone, string> = {
   admin: 'border-esn-orange/20 bg-esn-orange/8 text-esn-orange',
 }
 
-export function Badge({ tone = 'neutral', icon, children }: BadgeProps) {
+const sizeClasses: Record<NonNullable<BadgeProps['size']>, string> = {
+  md: 'gap-1.5 px-3.5 py-1.5 text-sm',
+  sm: 'gap-1 px-2.5 py-1 text-xs',
+}
+
+export function Badge({ tone = 'neutral', icon, size = 'md', children }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium tracking-wide uppercase ${toneClasses[tone]}`}
+      className={`inline-flex items-center rounded-full border font-medium tracking-wide uppercase ${sizeClasses[size]} ${toneClasses[tone]}`}
     >
       {icon}
       {children}

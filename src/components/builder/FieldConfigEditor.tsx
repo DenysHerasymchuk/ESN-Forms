@@ -1,5 +1,19 @@
 import { useState } from 'react'
-import { FaChevronDown, FaRegCircle, FaSquare, FaXmark } from 'react-icons/fa6'
+import {
+  FaAlignLeft,
+  FaCalendarDays,
+  FaCaretDown,
+  FaChevronDown,
+  FaEnvelope,
+  FaFont,
+  FaHashtag,
+  FaLink,
+  FaPlus,
+  FaRegCircle,
+  FaSquare,
+  FaSquareCheck,
+  FaXmark,
+} from 'react-icons/fa6'
 import type { Field, FieldOption, FieldType } from '../../lib/formField'
 import { TextField } from '../ui/TextField'
 import { CustomSelect, type SelectOption } from '../ui/CustomSelect'
@@ -13,16 +27,16 @@ function slugify(value: string): string {
 }
 
 const FIELD_TYPE_OPTIONS: SelectOption[] = [
-  { value: 'text', label: 'Short answer' },
-  { value: 'textarea', label: 'Paragraph' },
-  { value: 'email', label: 'Email' },
-  { value: 'url', label: 'URL' },
-  { value: 'number', label: 'Number' },
-  { value: 'date', label: 'Date' },
-  { value: 'select', label: 'Dropdown' },
-  { value: 'radio', label: 'Multiple choice' },
-  { value: 'checkbox', label: 'Checkboxes' },
-  { value: 'acknowledge', label: 'Acknowledgement' },
+  { value: 'text', label: 'Short answer', icon: <FaFont aria-hidden="true" /> },
+  { value: 'textarea', label: 'Paragraph', icon: <FaAlignLeft aria-hidden="true" /> },
+  { value: 'email', label: 'Email', icon: <FaEnvelope aria-hidden="true" /> },
+  { value: 'url', label: 'URL', icon: <FaLink aria-hidden="true" /> },
+  { value: 'number', label: 'Number', icon: <FaHashtag aria-hidden="true" /> },
+  { value: 'date', label: 'Date', icon: <FaCalendarDays aria-hidden="true" /> },
+  { value: 'select', label: 'Dropdown', icon: <FaCaretDown aria-hidden="true" /> },
+  { value: 'radio', label: 'Multiple choice', icon: <FaRegCircle aria-hidden="true" /> },
+  { value: 'checkbox', label: 'Checkboxes', icon: <FaSquare aria-hidden="true" /> },
+  { value: 'acknowledge', label: 'Acknowledgement', icon: <FaSquareCheck aria-hidden="true" /> },
 ]
 
 const OPTION_TYPES: FieldType[] = ['select', 'radio', 'checkbox']
@@ -83,14 +97,14 @@ export function FieldConfigEditor({ field, onChange }: Props) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start">
         <input
           value={field.label}
           onChange={(event) => onChange({ ...field, label: event.target.value })}
           placeholder="Question"
-          className={`${inlineInputClasses} min-w-0 flex-1`}
+          className={`${inlineInputClasses} w-full sm:min-w-0 sm:flex-1`}
         />
-        <div className="w-48 shrink-0">
+        <div className="w-full sm:w-48 sm:shrink-0">
           <CustomSelect ariaLabel="Question type" value={type} onChange={handleTypeChange} options={FIELD_TYPE_OPTIONS} />
         </div>
       </div>
@@ -134,8 +148,13 @@ export function FieldConfigEditor({ field, onChange }: Props) {
             </div>
           )}
 
-          <div className="flex items-center gap-3 pt-1 pl-7 text-sm">
-            <button type="button" onClick={addOption} className="font-medium text-esn-blue hover:underline">
+          <div className="flex items-center justify-center gap-3 pt-1 text-sm">
+            <button
+              type="button"
+              onClick={addOption}
+              className="inline-flex items-center gap-1.5 font-medium whitespace-nowrap text-esn-blue hover:underline"
+            >
+              <FaPlus aria-hidden="true" className="text-xs" />
               Add option
             </button>
             {(type === 'select' || type === 'radio') && !config.allowOther && (
@@ -146,8 +165,9 @@ export function FieldConfigEditor({ field, onChange }: Props) {
                   onClick={() =>
                     updateConfig({ allowOther: true, otherOptionValue: config.otherOptionValue ?? '__other__' })
                   }
-                  className="font-medium text-esn-blue hover:underline"
+                  className="inline-flex items-center gap-1.5 font-medium whitespace-nowrap text-esn-blue hover:underline"
                 >
+                  <FaPlus aria-hidden="true" className="text-xs" />
                   Add &quot;Other&quot;
                 </button>
               </>
@@ -212,12 +232,14 @@ export function FieldConfigEditor({ field, onChange }: Props) {
                     <div className="grid grid-cols-2 gap-4">
                       <TextField
                         label="Minimum"
+                        placeholder="e.g. 0"
                         type="number"
                         value={config.min?.toString() ?? ''}
                         onChange={(value) => updateConfig({ min: value ? Number(value) : undefined })}
                       />
                       <TextField
                         label="Maximum"
+                        placeholder="e.g. 100"
                         type="number"
                         value={config.max?.toString() ?? ''}
                         onChange={(value) => updateConfig({ max: value ? Number(value) : undefined })}
@@ -225,6 +247,8 @@ export function FieldConfigEditor({ field, onChange }: Props) {
                     </div>
                     <TextField
                       label="Step"
+                      helpText="How much the value can go up or down by each time"
+                      placeholder="e.g. 1"
                       type="number"
                       value={config.step?.toString() ?? ''}
                       onChange={(value) => updateConfig({ step: value ? Number(value) : undefined })}

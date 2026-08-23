@@ -27,11 +27,41 @@ type Props = {
   ownerLabel?: (form: FormRow) => string
 }
 
-// Shared by "My forms", Archive, and the admin "All forms" view. Status
-// collapses to icon-only below `sm`; "Owner"/"Updated" and the
-// action-button labels collapse below `md` - actions get more room to
-// breathe first since there are more of them.
+// Only a published form actually has a live public page to link to -
+// draft/archived badges stay plain status labels. Shared by both the
+// table (sm and up) and the card layout (below sm) so the two agree.
+function StatusBadge({ form, size }: { form: FormRow; size?: 'sm' | 'md' }) {
+  const badge = (
+    <Badge tone={statusTone[form.status]} icon={statusIcon[form.status]} size={size}>
+      {form.status}
+    </Badge>
+  )
+  return form.status === 'published' ? (
+    <a
+      href={`/forms/${form.slug}`}
+      target="_blank"
+      rel="noreferrer"
+      title="Open the public form"
+      className="inline-block transition-opacity hover:opacity-80"
+    >
+      {badge}
+    </a>
+  ) : (
+    badge
+  )
+}
+
+// Shared by "My forms", Archive, and the admin "All forms" view. A plain
+// <table> (even with column-hiding) can't fit Name + Status + action
+// buttons in a phone-width viewport, which forced a horizontal swipe just
+// to reach the actions - below `sm` this renders each form as a card
+// instead, with actions in their own full-width row, so nothing is ever
+// off-screen. `sm` and up keeps the real table.
 export function FormsTable({ forms, emptyMessage, renderActions, showStatus = true, ownerLabel }: Props) {
+  if (forms.length === 0) {
+    return <div className="flex flex-col items-center gap-2 py-12 text-center text-base text-muted">{emptyMessage}</div>
+  }
+
   const columns: DataTableColumn<FormRow>[] = [
     {
       header: 'Name',
@@ -50,35 +80,7 @@ export function FormsTable({ forms, emptyMessage, renderActions, showStatus = tr
           },
         ]
       : []),
-    ...(showStatus
-      ? [
-          {
-            header: 'Status',
-            cell: (form: FormRow) => {
-              const badge = (
-                <Badge tone={statusTone[form.status]} icon={statusIcon[form.status]}>
-                  <span className="hidden sm:inline">{form.status}</span>
-                </Badge>
-              )
-              // Only a published form actually has a live public page to
-              // link to - draft/archived badges stay plain status labels.
-              return form.status === 'published' ? (
-                <a
-                  href={`/forms/${form.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Open the public form"
-                  className="inline-block transition-opacity hover:opacity-80"
-                >
-                  {badge}
-                </a>
-              ) : (
-                badge
-              )
-            },
-          },
-        ]
-      : []),
+    ...(showStatus ? [{ header: 'Status', cell: (form: FormRow) => <StatusBadge form={form} /> }] : []),
     {
       header: 'Updated',
       hideBelowLg: true,
@@ -91,5 +93,29 @@ export function FormsTable({ forms, emptyMessage, renderActions, showStatus = tr
     },
   ]
 
-  return <DataTable columns={columns} rows={forms} getRowKey={(form) => form.id} emptyMessage={emptyMessage} />
+  return (
+    <>
+      <div className="hidden sm:block">
+        <DataTable columns={columns} rows={forms} getRowKey={(form) => form.id} />
+      </div>
+
+      <div className="space-y-3 sm:hidden">
+        {forms.map((form) => (
+          <div key={form.id} className="surface-card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <Link to={`/dashboard/forms/${form.id}/edit`} className="font-medium text-esn-blue hover:underline">
+                {form.name}
+              </Link>
+              {showStatus && <StatusBadge form={form} size="sm" />}
+            </div>
+            {ownerLabel && <p className="mt-1 text-sm text-muted">{ownerLabel(form)}</p>}
+            <p className="mt-1 text-sm text-muted">Updated {new Date(form.updated_at).toLocaleDateString()}</p>
+            <div className="mt-3 flex justify-center gap-2 border-t border-slate-100 pt-3 [&>*]:flex-1">
+              {renderActions(form)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
 }
