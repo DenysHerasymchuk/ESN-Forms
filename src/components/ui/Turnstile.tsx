@@ -52,20 +52,18 @@ export function Turnstile({ onVerify, onExpire }: Props) {
 
     loadTurnstileScript().then(() => {
       if (cancelled || !containerRef.current || !window.turnstile) return
-      // 'flexible' stretches to the container's width, which is what makes
-      // it read as part of the form's own layout instead of an oddly-sized
-      // box - but Cloudflare's own layout for it doesn't actually reflow
-      // below roughly 300px, so on a narrow phone the branding/privacy
-      // row inside the widget gets clipped instead of wrapping. 'compact'
-      // is the mode Cloudflare built for exactly that width, so use it
-      // once the available space drops below that.
-      const width = containerRef.current.getBoundingClientRect().width
+      // Stretches to the width of its container instead of Turnstile's
+      // fixed 300x65 default, so it reads as part of the form's own
+      // layout rather than an oddly-sized box dropped in on its own.
+      // ('compact' avoids Cloudflare's own ~300px reflow floor but is a
+      // tall, near-square box - not worth it just to save ~40px of width;
+      // that width is reclaimed instead via the negative margin below.)
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: SITE_KEY,
         callback: onVerify,
         'expired-callback': onExpire,
         theme: 'light',
-        size: width < 300 ? 'compact' : 'flexible',
+        size: 'flexible',
       })
     })
 
@@ -80,5 +78,10 @@ export function Turnstile({ onVerify, onExpire }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return <div ref={containerRef} className="mb-6 flex w-full justify-center" />
+  // On a narrow phone, the card's own p-6 padding left just under 300px of
+  // usable width - a hair below Cloudflare's flexible-mode reflow floor,
+  // which was clipping the branding/privacy row instead of wrapping it.
+  // Bleeding past that padding (below `sm`, where the card still uses p-6
+  // rather than p-10) reclaims exactly that padding back for the widget.
+  return <div ref={containerRef} className="-mx-6 mb-6 w-full sm:mx-0" />
 }
