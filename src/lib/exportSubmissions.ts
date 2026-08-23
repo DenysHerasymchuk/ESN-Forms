@@ -13,7 +13,7 @@ function exportableFields(form: FormRow): Field[] {
 }
 
 function submissionRow(fields: Field[], submission: SubmissionRow): string[] {
-  return [...fields.map((field) => formatAnswer(field, submission.answers)), new Date(submission.submitted_at).toLocaleString()]
+  return fields.map((field) => formatAnswer(field, submission.answers))
 }
 
 function exportFileName(form: FormRow, label: string, extension: string): string {
@@ -25,7 +25,11 @@ export async function exportSubmissionsToExcel(form: FormRow, submissions: Submi
   const XLSX = await import('xlsx')
   const fields = exportableFields(form)
   const headers = [...fields.map((field) => field.label || 'Untitled question'), 'Submitted at']
-  const sheet = XLSX.utils.aoa_to_sheet([headers, ...submissions.map((submission) => submissionRow(fields, submission))])
+  const rows = submissions.map((submission) => [
+    ...submissionRow(fields, submission),
+    new Date(submission.submitted_at).toLocaleString(),
+  ])
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
   const book = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(book, sheet, 'Submissions')
   XLSX.writeFile(book, exportFileName(form, 'submissions', 'xlsx'))
@@ -77,7 +81,12 @@ type PdfKind = 'submissions' | 'attendance'
 async function buildPdf(form: FormRow, submissions: SubmissionRow[], kind: PdfKind) {
   const { jsPDF } = await import('jspdf')
   const { autoTable } = await import('jspdf-autotable')
-  const fields = exportableFields(form)
+  // The attendance sheet only needs enough to identify who's signing, not
+  // every question on the form - restricting to the first two fields also
+  // keeps the sheet narrow enough that the Signature column never has to
+  // fight for space with a long tail of unrelated questions.
+  const allFields = exportableFields(form)
+  const fields = kind === 'attendance' ? allFields.slice(0, 2) : allFields
   const logo = await loadLogoDataUrl()
   const doc = new jsPDF({ orientation: 'portrait', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -118,8 +127,20 @@ async function buildPdf(form: FormRow, submissions: SubmissionRow[], kind: PdfKi
   doc.setLineWidth(0.8)
   doc.line(14, 27, pageWidth - 14, 27)
 
-  const head = ['#', ...fields.map((field) => field.label || 'Untitled question'), 'Submitted at']
-  const body = submissions.map((submission, index) => [String(index + 1), ...submissionRow(fields, submission)])
+  // Submissions normally come back newest-first, but for a printed
+  // attendance sheet it's far more useful to be able to scan down and find
+  // a name - alphabetical by whatever the first field is (usually a name).
+  const sortedSubmissions =
+    kind === 'attendance' && fields.length > 0
+      ? [...submissions].sort((a, b) =>
+          formatAnswer(fields[0], a.answers).localeCompare(formatAnswer(fields[0], b.answers), undefined, {
+            sensitivity: 'base',
+          }),
+        )
+      : submissions
+
+  const head = ['#', ...fields.map((field) => field.label || 'Untitled question')]
+  const body = sortedSubmissions.map((submission, index) => [String(index + 1), ...submissionRow(fields, submission)])
   if (kind === 'attendance') {
     head.push('Signature')
     for (const row of body) row.push('')
