@@ -52,15 +52,20 @@ export function Turnstile({ onVerify, onExpire }: Props) {
 
     loadTurnstileScript().then(() => {
       if (cancelled || !containerRef.current || !window.turnstile) return
+      // 'flexible' stretches to the container's width, which is what makes
+      // it read as part of the form's own layout instead of an oddly-sized
+      // box - but Cloudflare's own layout for it doesn't actually reflow
+      // below roughly 300px, so on a narrow phone the branding/privacy
+      // row inside the widget gets clipped instead of wrapping. 'compact'
+      // is the mode Cloudflare built for exactly that width, so use it
+      // once the available space drops below that.
+      const width = containerRef.current.getBoundingClientRect().width
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: SITE_KEY,
         callback: onVerify,
         'expired-callback': onExpire,
         theme: 'light',
-        // Stretches to the width of its container instead of Turnstile's
-        // fixed 300x65 default, so it reads as part of the form's own
-        // layout rather than an oddly-sized box dropped in on its own.
-        size: 'flexible',
+        size: width < 300 ? 'compact' : 'flexible',
       })
     })
 
@@ -75,5 +80,5 @@ export function Turnstile({ onVerify, onExpire }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return <div ref={containerRef} className="mb-6 w-full" />
+  return <div ref={containerRef} className="mb-6 flex w-full justify-center" />
 }
